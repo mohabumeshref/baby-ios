@@ -28,3 +28,8 @@ __MACOSX/
 *.p12
 *.p8
 service-account.json
+
+# Firebase client config. Not a password, but it carries the API key, sender id
+# and project config - it must not sit in a public repo. Ignored while the repo
+# is public; commit it (or inject it from a CI secret) once private.
+GoogleService-Info.plist
