@@ -1,0 +1,115 @@
+# XcodeGen spec - the .xcodeproj is generated from this file, never hand-edited.
+#
+# Why: this project is authored on Windows where Xcode cannot run, so a
+# hand-written project.pbxproj could not be validated before CI. A declarative
+# spec removes that whole class of failure and stays reviewable in diffs.
+#
+# Regenerate locally (macOS):  brew install xcodegen && xcodegen generate
+# CI does this automatically before every build.
+
+name: BabyTracker
+
+options:
+  bundleIdPrefix: com.meshref
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: ar
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    # PLACEHOLDER - confirm with the Apple Developer account before the first
+    # TestFlight upload. Must match the App ID, the provisioning profile, and
+    # the iOS app registered in the Firebase project.
+    PRODUCT_BUNDLE_IDENTIFIER: com.meshref.arabicbaby
+    DEVELOPMENT_TEAM: 78CLZ67RBG   # same team as pt-ios; confirm
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"   # testflight.yml overwrites via agvtool
+    SWIFT_VERSION: "5.9"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # Arabic is the development language; the app is RTL-first.
+    SWIFT_EMIT_LOC_STRINGS: YES
+
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk.git
+    minVersion: "10.0.0"
+    maxVersion: "12.0.0"
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    minVersion: "11.11.0"
+    maxVersion: "12.0.0"
+
+targets:
+  BabyTracker:
+    type: application
+    platform: iOS
+    sources:
+      - path: BabyTracker
+        excludes:
+          - "**/.DS_Store"
+    dependencies:
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseMessaging
+      - package: Firebase
+        product: FirebaseStorage
+      - package: Firebase
+        product: FirebaseAnalytics
+      - package: Firebase
+        product: FirebaseRemoteConfig
+      - package: GoogleMobileAds
+        product: GoogleMobileAds
+      - target: ForumKit
+    settings:
+      base:
+        INFOPLIST_FILE: BabyTracker/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1"   # iPhone only, matching the Android app's scope
+
+  # The forum layer lives in its own target so it stays free of app-specific
+  # code and can later be lifted into pt-ios rather than maintained twice.
+  ForumKit:
+    type: framework
+    platform: iOS
+    sources:
+      - ForumKit
+    dependencies:
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseStorage
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.meshref.arabicbaby.forumkit
+        GENERATE_INFOPLIST_FILE: YES
+
+  BabyTrackerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - BabyTrackerTests
+    dependencies:
+      - target: BabyTracker
+      - target: ForumKit
+
+schemes:
+  BabyTracker:
+    build:
+      targets:
+        BabyTracker: all
+        ForumKit: all
+    test:
+      targets:
+        - BabyTrackerTests
+    run:
+      config: Debug
+    archive:
+      config: Release

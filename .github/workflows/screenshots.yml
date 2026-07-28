@@ -1,0 +1,91 @@
+# Boots a simulator, launches the app in Arabic, and captures screenshots as
+# build artifacts.
+#
+# This exists because the app is authored on Windows: it is the only way for
+# the author to actually see the rendered UI - RTL layout, Cairo text, and the
+# Warm & Refined palette - before it reaches a device.
+#
+# Kept separate from ci.yml so a flaky simulator boot can never block a
+# compile check.
+name: Screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      language:
+        description: 'UI language to launch in'
+        required: false
+        default: 'ar'
+        type: choice
+        options: [ar, en]
+  push:
+    branches-ignore: [main]
+    paths:
+      - 'BabyTracker/Views/**'
+      - 'BabyTracker/DesignSystem/**'
+
+env:
+  PROJECT: BabyTracker.xcodeproj
+  SCHEME: BabyTracker
+  BUNDLE_ID: com.meshref.arabicbaby
+  SIMULATOR: 'iPhone 16'
+
+jobs:
+  screenshots:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.3'
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build for simulator
+        run: |
+          xcodebuild build \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,name=$SIMULATOR" \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Boot simulator and install
+        run: |
+          xcrun simctl boot "$SIMULATOR" || true
+          xcrun simctl bootstatus "$SIMULATOR" -b
+          APP_PATH=$(find "$RUNNER_TEMP/dd/Build/Products" -name "BabyTracker.app" -type d | head -1)
+          echo "Installing $APP_PATH"
+          xcrun simctl install booted "$APP_PATH"
+
+      - name: Launch and capture
+        run: |
+          LANG_CODE="${{ github.event.inputs.language || 'ar' }}"
+          mkdir -p "$RUNNER_TEMP/shots"
+
+          xcrun simctl launch booted "$BUNDLE_ID" \
+            -AppleLanguages "($LANG_CODE)" \
+            -AppleLocale "${LANG_CODE}_JO"
+
+          # Give SwiftUI time to lay out and for JSON content to load.
+          sleep 8
+          xcrun simctl io booted screenshot "$RUNNER_TEMP/shots/01-home-$LANG_CODE.png"
+
+          echo "Captured:"
+          ls -la "$RUNNER_TEMP/shots"
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ github.event.inputs.language || 'ar' }}-${{ github.run_number }}
+          path: ${{ runner.temp }}/shots/*.png
+          if-no-files-found: error

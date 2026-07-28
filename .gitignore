@@ -1,0 +1,30 @@
+# The Xcode project is generated from project.yml by XcodeGen.
+# Never commit it - regenerate with `xcodegen generate`.
+*.xcodeproj/
+*.xcworkspace/
+
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# SPM
+.swiftpm/
+.build/
+Packages/
+
+# macOS
+.DS_Store
+__MACOSX/
+
+# Secrets - never commit these
+*.mobileprovision
+*.p12
+*.p8
+service-account.json
