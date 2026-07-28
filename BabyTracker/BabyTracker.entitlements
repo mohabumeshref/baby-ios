@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Required for APNs. Without this the app builds and archives fine but
+	     never receives a push on device, which is a silent failure that only
+	     shows up after a TestFlight round trip.
+
+	     "production" matches pt-ios. TestFlight builds are production-signed,
+	     so this is correct for both TestFlight and the App Store; only a
+	     development-signed local run would want "development". -->
+	<key>aps-environment</key>
+	<string>production</string>
+</dict>
+</plist>

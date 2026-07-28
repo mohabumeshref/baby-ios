@@ -82,6 +82,10 @@ targets:
     settings:
       base:
         INFOPLIST_FILE: BabyTracker/Info.plist
+        # aps-environment. The App ID in the Apple Developer portal must have
+        # the Push Notifications capability enabled, or the provisioning
+        # profile won't carry this entitlement and the export fails.
+        CODE_SIGN_ENTITLEMENTS: BabyTracker/BabyTracker.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1"   # iPhone only, matching the Android app's scope
