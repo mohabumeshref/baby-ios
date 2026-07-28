@@ -11,15 +11,18 @@ import SwiftUI
 struct BabyTrackerApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+    @StateObject private var profile = BabyProfile()
+    @StateObject private var milestones = MilestoneStore()
+
     var body: some Scene {
         WindowGroup {
             RootView()
-                // Arabic is the development language and the app is RTL-first.
-                // SwiftUI derives direction from the active locale, so this only
-                // needs stating where a view must not mirror (numerals, dates).
-                .environment(\.layoutDirection,
-                             Locale.preferredLanguages.first?.hasPrefix("ar") == true
-                                ? .rightToLeft : .leftToRight)
+                .environmentObject(profile)
+                .environmentObject(milestones)
+                // The warm palette is a fixed identity - inverting it for dark
+                // mode produces something that reads as a different product,
+                // so the colour scheme is pinned rather than duplicated.
+                .preferredColorScheme(.light)
         }
     }
 }
