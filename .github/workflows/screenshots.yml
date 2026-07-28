@@ -42,9 +42,23 @@ jobs:
         with:
           xcode-version: '26.3'
 
+      # Without the real plist the app runs with Firebase disabled and the
+      # community tab can only ever show the signed-out screen. Optional: if the
+      # secret is absent the job still works, it just can't show the forum.
+      - name: Restore GoogleService-Info.plist
+        env:
+          PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
+        run: |
+          if [ -n "$PLIST_BASE64" ]; then
+            echo -n "$PLIST_BASE64" | base64 --decode -o BabyTracker/GoogleService-Info.plist
+            echo "Firebase enabled for this run"
+          else
+            echo "::warning::No plist secret - the forum will render signed-out"
+          fi
+
       - name: Generate Xcode project
         run: |
-          brew install xcodegen
+          brew install --quiet xcodegen
           xcodegen generate
 
       # Resolved by UDID rather than a hardcoded name - runner images retire
@@ -92,6 +106,17 @@ jobs:
           UDID="${{ steps.sim.outputs.udid }}"
           mkdir -p "$RUNNER_TEMP/shots"
 
+          # Throwaway forum account, so the community tab can be captured
+          # signed in. Empty when the secrets aren't set - the app then just
+          # shows the sign-in screen, which is still a valid screenshot.
+          SEED_EMAIL="${{ secrets.FORUM_TEST_EMAIL }}"
+          SEED_PASSWORD="${{ secrets.FORUM_TEST_PASSWORD }}"
+          AUTH_ARGS=""
+          if [ -n "$SEED_EMAIL" ] && [ -n "$SEED_PASSWORD" ]; then
+            AUTH_ARGS="-seed_email $SEED_EMAIL -seed_password $SEED_PASSWORD"
+            echo "forum auto-sign-in enabled"
+          fi
+
           # The job can't tap the UI, so each screen is a separate launch
           # driven by the DEBUG-only launch arguments in ScreenshotSeed.swift:
           # seed a 90-day-old baby to skip onboarding, and pick the tab.
@@ -110,7 +135,7 @@ jobs:
 
           capture 01-home     0 90
           capture 02-weeks    1 90
-          capture 03-community 2 90
+          capture 03-community 2 90 18
 
           # Onboarding has no seeded date, so it renders the first-run screen.
           xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true

@@ -33,6 +33,10 @@ struct BabyTrackerApp: App {
                 .preferredColorScheme(.light)
                 .task {
                     auth.start()
+                    // DEBUG-only, screenshot job only. Compiles away in Release.
+                    if let seed = ScreenshotSeed.credentials {
+                        await auth.signInIfNeeded(email: seed.email, password: seed.password)
+                    }
                     await notifications.refreshAuthorizationStatus()
                     await RemoteConfigGate.shared.prefetch()
                 }

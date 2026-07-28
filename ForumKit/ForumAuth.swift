@@ -34,6 +34,14 @@ public final class ForumAuth: ObservableObject {
 
     public init() {}
 
+    /// Signs in with supplied credentials only if nobody is signed in already.
+    /// Used by the screenshot job; a no-op in any normal run because it is only
+    /// ever called with credentials that DEBUG-only code can produce.
+    public func signInIfNeeded(email: String, password: String) async {
+        guard ForumKit.isConfigured, user == nil else { return }
+        try? await signIn(email: email, password: password)
+    }
+
     /// Starts observing auth state. Safe to call more than once.
     public func start() {
         guard ForumKit.isConfigured, handle == nil else { return }
