@@ -1,0 +1,22 @@
+# This repo is authored on Windows but every build runs on macOS. CRLF inside
+# a workflow's `run:` block leaves stray \r in the shell script, which breaks
+# heredocs and variable expansion. Force LF on everything the runner executes
+# or parses.
+* text=auto eol=lf
+
+*.sh    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.swift text eol=lf
+*.py    text eol=lf
+*.json  text eol=lf
+*.plist text eol=lf
+*.md    text eol=lf
+
+# Binary
+*.png   binary
+*.jpg   binary
+*.ttf   binary
+*.otf   binary
+*.p12   binary
+*.mobileprovision binary
