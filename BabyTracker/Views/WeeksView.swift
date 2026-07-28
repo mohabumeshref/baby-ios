@@ -69,6 +69,12 @@ struct WeeksView: View {
             }
         }
         .warmBackground()
+        .safeAreaInset(edge: .bottom) {
+            // Pinned below the reader rather than inline, so it never lands in
+            // the middle of an article the parent is reading. Same placement as
+            // the Android app and pt-ios.
+            BannerAdView()
+        }
         .onAppear {
             if let currentIndex { selectedIndex = currentIndex }
         }

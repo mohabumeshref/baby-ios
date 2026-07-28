@@ -51,6 +51,7 @@ struct CommunityView: View {
         .task {
             auth.start()
             if auth.isSignedIn { await model.loadFirstPage() }
+            await InterstitialAdManager.shared.preload()
         }
         .onChange(of: auth.isSignedIn) { signedIn in
             guard signedIn else { return }
@@ -83,7 +84,13 @@ struct CommunityView: View {
                 } else {
                     ForEach(model.displayedPosts) { post in
                         Button {
-                            if let docId = post.docId { path.append(docId) }
+                            guard let docId = post.docId else { return }
+                            // Opening a post is the interstitial moment, as in
+                            // pt-ios. AdGate decides whether one actually shows;
+                            // navigation happens either way and is never
+                            // blocked waiting on an ad.
+                            Task { await InterstitialAdManager.shared.showIfAllowed() }
+                            path.append(docId)
                         } label: {
                             PostCard(
                                 post: post,

@@ -17,6 +17,7 @@
 import UIKit
 import FirebaseCore
 import FirebaseMessaging
+import GoogleMobileAds
 
 final class AppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate,
                          UNUserNotificationCenterDelegate {
@@ -25,6 +26,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate,
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // The Mobile Ads SDK is independent of Firebase - it reads
+        // GADApplicationIdentifier from Info.plist - so it starts either way.
+        // Starting the SDK does not request an ad; nothing is requested until
+        // ATT has been answered.
+        GADMobileAds.sharedInstance().start(completionHandler: nil)
+
         // GoogleService-Info.plist is supplied per-environment and is absent on
         // a fresh checkout. Configuring without it raises, which would take the
         // simulator screenshot job down with it, so probe for it first.

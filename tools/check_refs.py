@@ -81,6 +81,8 @@ def main():
     system_views = {
         "NavigationView", "ScrollView", "AnyView", "TabView", "EmptyView",
         "ContentView", "ProgressView", "UnicodeScalarView", "ImageView",
+        # GoogleMobileAds
+        "GADBannerView",
     }
     report("View types", view_refs - declared_types - system_views)
 
