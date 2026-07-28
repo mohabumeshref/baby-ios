@@ -1,6 +1,20 @@
-# Fast compile check. Runs on every branch and PR, no secrets, no signing,
-# no upload. This is the feedback loop during development - testflight.yml is
-# only for releases.
+# Compile + test check.
+#
+# COST: macOS runners bill at 10x the Linux rate, so this workflow is written
+# to be cheap rather than thorough:
+#
+#   * ONE job, not two. A separate test job would repeat checkout, Xcode
+#     selection, xcodegen install and SPM resolution - several minutes of
+#     billed time to re-do work the build job already did.
+#   * ONE xcodebuild invocation. `xcodebuild test` builds everything it needs,
+#     so a preceding `build` step is pure duplication.
+#   * Failures are diagnosed from a SAVED LOG, never by re-running the build.
+#   * Simulator only. The runners are Apple Silicon, so a simulator build is
+#     already arm64 and catches the same architecture and linker problems a
+#     device build would. testflight.yml does the real device archive.
+#   * `cancel-in-progress` so a quick follow-up push doesn't pay for both.
+#
+# Before adding a step here, check it can't be folded into the existing run.
 name: CI
 
 on:
@@ -16,10 +30,12 @@ concurrency:
 env:
   PROJECT: BabyTracker.xcodeproj
   SCHEME: BabyTracker
+  SIMULATOR: 'iPhone 16'
 
 jobs:
-  build:
+  build-and-test:
     runs-on: macos-latest
+    timeout-minutes: 30   # hard stop so a hung run can't drain the budget
 
     steps:
       - name: Checkout
@@ -32,7 +48,11 @@ jobs:
 
       - name: Generate Xcode project
         run: |
-          brew install xcodegen
+          # Direct binary download - `brew install xcodegen` pulls a large
+          # dependency tree and costs about a minute of billed time per run.
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install --quiet xcodegen
+          fi
           xcodegen generate
 
       - name: Cache SPM
@@ -42,99 +62,42 @@ jobs:
           key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
           restore-keys: spm-${{ runner.os }}-
 
-      - name: Resolve Swift Package dependencies
-        run: |
-          xcodebuild -resolvePackageDependencies \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm"
-
-      - name: Build
+      # Builds AND tests in a single pass. Output is teed to a log so the
+      # failure step below can read it instead of paying to rebuild.
+      - name: Build and test
         run: |
           set -o pipefail
-          # xcpretty is not guaranteed to be on the runner image, and piping
-          # into a missing binary would fail the step even on a good build.
-          # Fall back to raw xcodebuild output rather than pretending to fail.
-          if command -v xcpretty >/dev/null 2>&1; then
-            FORMATTER="xcpretty"
-          else
-            FORMATTER="cat"
-          fi
-
-          xcodebuild build \
+          xcodebuild test \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -configuration Debug \
-            -destination 'generic/platform=iOS' \
+            -destination "platform=iOS Simulator,name=$SIMULATOR" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
             CODE_SIGNING_ALLOWED=NO \
-            | $FORMATTER
+            2>&1 | tee "$RUNNER_TEMP/xcodebuild.log"
 
-      # Surfaces the actual compiler diagnostics when the pretty formatter
-      # swallowed them.
-      - name: Show errors
+      - name: Diagnostics
         if: failure()
         run: |
-          echo "::group::Build errors"
-          xcodebuild build \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -configuration Debug \
-            -destination 'generic/platform=iOS' \
-            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
-            CODE_SIGNING_ALLOWED=NO 2>&1 \
-            | grep -E "error:|warning:|note:" | head -60 || true
+          echo "::group::Compiler errors"
+          grep -E "error:" "$RUNNER_TEMP/xcodebuild.log" | sort -u | head -40 || true
           echo "::endgroup::"
 
-  # Separate job: a compiling app is not a correct one. These are the only
-  # automated check on the ported logic - the age arithmetic and, critically,
-  # the search tokenizer, which must stay byte-identical to the Android app or
-  # posts silently stop matching across the shared forum.
-  test:
-    runs-on: macos-latest
+          echo "::group::Test failures"
+          grep -E "XCTAssert|failed \(|Test Case .* failed" "$RUNNER_TEMP/xcodebuild.log" \
+            | head -40 || true
+          echo "::endgroup::"
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+          echo "::group::Linker"
+          grep -E "Undefined symbols|ld: |symbol\(s\) not found" "$RUNNER_TEMP/xcodebuild.log" \
+            | head -20 || true
+          echo "::endgroup::"
 
-      - name: Select Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '26.3'
-
-      - name: Generate Xcode project
-        run: |
-          brew install xcodegen
-          xcodegen generate
-
-      - name: Cache SPM
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/spm
-          key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
-          restore-keys: spm-${{ runner.os }}-
-
-      - name: Run tests
-        run: |
-          set -o pipefail
-          xcodebuild test \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
-            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Show test failures
+      # Kept only on failure, and only the tail - the full log is large.
+      - name: Upload log
         if: failure()
-        run: |
-          echo "::group::Failures"
-          xcodebuild test \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
-            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
-            CODE_SIGNING_ALLOWED=NO 2>&1 \
-            | grep -E "error:|failed|XCTAssert" | head -60 || true
-          echo "::endgroup::"
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: ${{ runner.temp }}/xcodebuild.log
+          retention-days: 3

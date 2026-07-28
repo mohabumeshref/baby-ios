@@ -16,9 +16,14 @@ env:
   # Must match project.yml and the provisioning profile.
   BUNDLE_ID: com.wecare.arabicbaby
 
+concurrency:
+  group: testflight
+  cancel-in-progress: false   # never abandon a partial upload
+
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
