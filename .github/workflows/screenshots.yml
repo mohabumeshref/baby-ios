@@ -27,7 +27,6 @@ env:
   PROJECT: BabyTracker.xcodeproj
   SCHEME: BabyTracker
   BUNDLE_ID: com.wecare.arabicbaby
-  SIMULATOR: 'iPhone 16'
 
 jobs:
   screenshots:
@@ -48,28 +47,49 @@ jobs:
           brew install xcodegen
           xcodegen generate
 
+      # Resolved by UDID rather than a hardcoded name - runner images retire
+      # device names between Xcode releases.
+      - name: Select simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available \
+                 | grep -E "^[[:space:]]+iPhone" \
+                 | head -1 \
+                 | grep -oE "[0-9A-Fa-f]{8}-[0-9A-Fa-f-]{27}")
+
+          if [ -z "$UDID" ]; then
+            echo "::error::No iPhone simulator on this image"
+            xcrun simctl list devices available
+            exit 1
+          fi
+
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "Using $(xcrun simctl list devices available | grep "$UDID" | sed -E 's/^ *//')"
+
       - name: Build for simulator
         run: |
           xcodebuild build \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -configuration Debug \
-            -destination "platform=iOS Simulator,name=$SIMULATOR" \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath "$RUNNER_TEMP/dd" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Boot simulator and install
         run: |
-          xcrun simctl boot "$SIMULATOR" || true
-          xcrun simctl bootstatus "$SIMULATOR" -b
+          UDID="${{ steps.sim.outputs.udid }}"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
           APP_PATH=$(find "$RUNNER_TEMP/dd/Build/Products" -name "BabyTracker.app" -type d | head -1)
           echo "Installing $APP_PATH"
-          xcrun simctl install booted "$APP_PATH"
+          xcrun simctl install "$UDID" "$APP_PATH"
 
       - name: Launch and capture
         run: |
           LANG_CODE="${{ github.event.inputs.language || 'ar' }}"
+          UDID="${{ steps.sim.outputs.udid }}"
           mkdir -p "$RUNNER_TEMP/shots"
 
           # The job can't tap the UI, so each screen is a separate launch
@@ -77,14 +97,14 @@ jobs:
           # seed a 90-day-old baby to skip onboarding, and pick the tab.
           capture () {
             local name="$1" tab="$2" days="$3"
-            xcrun simctl terminate booted "$BUNDLE_ID" 2>/dev/null || true
-            xcrun simctl launch booted "$BUNDLE_ID" \
+            xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
+            xcrun simctl launch "$UDID" "$BUNDLE_ID" \
               -AppleLanguages "($LANG_CODE)" \
               -AppleLocale "${LANG_CODE}_JO" \
               -seed_baby_days_ago "$days" \
               -seed_tab "$tab"
             sleep 6
-            xcrun simctl io booted screenshot "$RUNNER_TEMP/shots/${name}-${LANG_CODE}.png"
+            xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/${name}-${LANG_CODE}.png"
             echo "captured ${name}"
           }
 
@@ -93,11 +113,11 @@ jobs:
           capture 03-community 2 90
 
           # Onboarding has no seeded date, so it renders the first-run screen.
-          xcrun simctl terminate booted "$BUNDLE_ID" 2>/dev/null || true
-          xcrun simctl launch booted "$BUNDLE_ID" \
+          xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
+          xcrun simctl launch "$UDID" "$BUNDLE_ID" \
             -AppleLanguages "($LANG_CODE)" -AppleLocale "${LANG_CODE}_JO"
           sleep 6
-          xcrun simctl io booted screenshot "$RUNNER_TEMP/shots/00-onboarding-${LANG_CODE}.png"
+          xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/00-onboarding-${LANG_CODE}.png"
 
           echo "Captured:"
           ls -la "$RUNNER_TEMP/shots"

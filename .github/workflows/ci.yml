@@ -30,7 +30,6 @@ concurrency:
 env:
   PROJECT: BabyTracker.xcodeproj
   SCHEME: BabyTracker
-  SIMULATOR: 'iPhone 16'
 
 jobs:
   build-and-test:
@@ -62,6 +61,27 @@ jobs:
           key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
           restore-keys: spm-${{ runner.os }}-
 
+      # Resolve a simulator by UDID instead of hardcoding a device name.
+      # Runner images retire device names without warning - "iPhone 16" vanished
+      # under Xcode 26.3 - and each such break costs a full billed run to
+      # discover. Whatever iPhone the image ships with will do.
+      - name: Select simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available \
+                 | grep -E "^[[:space:]]+iPhone" \
+                 | head -1 \
+                 | grep -oE "[0-9A-Fa-f]{8}-[0-9A-Fa-f-]{27}")
+
+          if [ -z "$UDID" ]; then
+            echo "::error::No iPhone simulator on this image"
+            xcrun simctl list devices available
+            exit 1
+          fi
+
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "Using $(xcrun simctl list devices available | grep "$UDID" | sed -E 's/^ *//')"
+
       # Builds AND tests in a single pass. Output is teed to a log so the
       # failure step below can read it instead of paying to rebuild.
       - name: Build and test
@@ -71,7 +91,7 @@ jobs:
             -project "$PROJECT" \
             -scheme "$SCHEME" \
             -configuration Debug \
-            -destination "platform=iOS Simulator,name=$SIMULATOR" \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee "$RUNNER_TEMP/xcodebuild.log"
