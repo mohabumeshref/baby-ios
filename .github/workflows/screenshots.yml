@@ -72,13 +72,32 @@ jobs:
           LANG_CODE="${{ github.event.inputs.language || 'ar' }}"
           mkdir -p "$RUNNER_TEMP/shots"
 
-          xcrun simctl launch booted "$BUNDLE_ID" \
-            -AppleLanguages "($LANG_CODE)" \
-            -AppleLocale "${LANG_CODE}_JO"
+          # The job can't tap the UI, so each screen is a separate launch
+          # driven by the DEBUG-only launch arguments in ScreenshotSeed.swift:
+          # seed a 90-day-old baby to skip onboarding, and pick the tab.
+          capture () {
+            local name="$1" tab="$2" days="$3"
+            xcrun simctl terminate booted "$BUNDLE_ID" 2>/dev/null || true
+            xcrun simctl launch booted "$BUNDLE_ID" \
+              -AppleLanguages "($LANG_CODE)" \
+              -AppleLocale "${LANG_CODE}_JO" \
+              -seed_baby_days_ago "$days" \
+              -seed_tab "$tab"
+            sleep 6
+            xcrun simctl io booted screenshot "$RUNNER_TEMP/shots/${name}-${LANG_CODE}.png"
+            echo "captured ${name}"
+          }
 
-          # Give SwiftUI time to lay out and for JSON content to load.
-          sleep 8
-          xcrun simctl io booted screenshot "$RUNNER_TEMP/shots/01-home-$LANG_CODE.png"
+          capture 01-home     0 90
+          capture 02-weeks    1 90
+          capture 03-community 2 90
+
+          # Onboarding has no seeded date, so it renders the first-run screen.
+          xcrun simctl terminate booted "$BUNDLE_ID" 2>/dev/null || true
+          xcrun simctl launch booted "$BUNDLE_ID" \
+            -AppleLanguages "($LANG_CODE)" -AppleLocale "${LANG_CODE}_JO"
+          sleep 6
+          xcrun simctl io booted screenshot "$RUNNER_TEMP/shots/00-onboarding-${LANG_CODE}.png"
 
           echo "Captured:"
           ls -la "$RUNNER_TEMP/shots"

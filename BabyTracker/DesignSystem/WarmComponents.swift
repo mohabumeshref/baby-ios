@@ -95,8 +95,8 @@ struct TierProgressBar: View {
         .frame(height: 6)
         .animation(.easeOut(duration: 0.15), value: fraction)
         .accessibilityElement()
-        .accessibilityLabel(Text("التقدّم"))
-        .accessibilityValue(Text("\(String.number(completed)) من \(String.number(total))"))
+        .accessibilityLabel(Text(L.progress))
+        .accessibilityValue(Text(L.ofTotal(completed, total)))
     }
 }
 

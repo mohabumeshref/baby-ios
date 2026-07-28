@@ -2,10 +2,7 @@
 //  RootView.swift
 //  BabyTracker
 //
-//  Decides between onboarding and the main app.
-//
-//  The tab shell (Home / Weeks / Community) lands with the Weeks tab; for now
-//  this hosts Home directly.
+//  Decides between onboarding and the tab shell.
 //
 
 import SwiftUI
@@ -14,13 +11,59 @@ struct RootView: View {
     @EnvironmentObject private var profile: BabyProfile
 
     var body: some View {
-        Group {
-            if profile.isOnboarded {
-                HomeView()
-            } else {
-                BirthDateOnboardingView()
-            }
+        if profile.isOnboarded {
+            MainTabView()
+        } else {
+            BirthDateOnboardingView()
         }
+    }
+}
+
+/// Home / Weeks / Community.
+///
+/// A native `TabView` rather than the Android layout's custom header buttons:
+/// a bottom tab bar is the iOS convention, and it mirrors correctly in RTL
+/// without any work.
+struct MainTabView: View {
+    @State private var selection = ScreenshotSeed.tab ?? 0
+
+    var body: some View {
+        TabView(selection: $selection) {
+            HomeView()
+                .tag(0)
+                .tabItem {
+                    Label(L.tabHome, systemImage: "house.fill")
+                }
+
+            WeeksView()
+                .tag(1)
+                .tabItem {
+                    Label(L.tabWeeks, systemImage: "calendar")
+                }
+
+            CommunityPlaceholderView()
+                .tag(2)
+                .tabItem {
+                    Label(L.tabCommunity, systemImage: "bubble.left.and.bubble.right.fill")
+                }
+        }
+        .tint(Warm.brand)
+    }
+}
+
+/// Stands in until ForumKit lands.
+struct CommunityPlaceholderView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "bubble.left.and.bubble.right")
+                .font(.system(size: 40))
+                .foregroundStyle(Warm.muted)
+            Text(L.communityComingSoon)
+                .font(WarmFont.body)
+                .foregroundStyle(Warm.mutedSub)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .warmBackground()
     }
 }
 
@@ -35,10 +78,10 @@ struct BirthDateOnboardingView: View {
             Spacer()
 
             VStack(spacing: 8) {
-                Text("أهلاً بكِ")
+                Text(L.welcome)
                     .font(WarmFont.display)
                     .foregroundStyle(Warm.ink)
-                Text("متى وُلد طفلك؟")
+                Text(L.whenWasBabyBorn)
                     .font(WarmFont.body)
                     .foregroundStyle(Warm.mutedSub)
             }
@@ -58,7 +101,7 @@ struct BirthDateOnboardingView: View {
             Button {
                 profile.birthDate = selected
             } label: {
-                Text("متابعة")
+                Text(L.continueAction)
                     .font(WarmFont.heading)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)

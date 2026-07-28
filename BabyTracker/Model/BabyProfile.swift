@@ -32,7 +32,10 @@ final class BabyProfile: ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let stored = defaults.double(forKey: Keys.birthDate)
-        self.birthDate = stored > 0 ? Date(timeIntervalSince1970: stored) : nil
+        // A seeded date (DEBUG screenshot runs only) wins, so the job can skip
+        // onboarding without persisting anything.
+        self.birthDate = ScreenshotSeed.birthDate
+            ?? (stored > 0 ? Date(timeIntervalSince1970: stored) : nil)
     }
 
     var isOnboarded: Bool { birthDate != nil }

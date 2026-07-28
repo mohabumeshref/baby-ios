@@ -33,7 +33,7 @@ struct HomeView: View {
                         }
                     }
                 } else {
-                    Text("لم يتم تحديد تاريخ الميلاد بعد")
+                    Text(L.noBirthDateYet)
                         .font(WarmFont.body)
                         .foregroundStyle(Warm.muted)
                         .padding(.top, 60)
@@ -49,11 +49,11 @@ struct HomeView: View {
 
     private func hero(_ age: BabyAge) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("مهارات هذا الشهر")
+            Text(L.thisMonthsSkills)
                 .font(WarmFont.eyebrow)
                 .foregroundStyle(Warm.eyebrow)
 
-            Text("الشهر \(ArabicOrdinal.month(age.milestoneMonth))")
+            Text(L.monthHeadline(age.milestoneMonth))
                 .font(WarmFont.display)
                 .foregroundStyle(Warm.ink)
         }
@@ -65,9 +65,9 @@ struct HomeView: View {
     private func statsCard(_ age: BabyAge) -> some View {
         WarmCard(radius: WarmMetrics.statCardRadius) {
             HStack(spacing: 12) {
-                stat(value: age.days, label: "يوم")
+                stat(value: age.days, label: L.dayUnit)
                 divider
-                stat(value: age.weeks, label: "أسبوع")
+                stat(value: age.weeks, label: L.weekUnit)
                 divider
                 monthBadge(age.milestoneMonth)
             }
@@ -97,7 +97,7 @@ struct HomeView: View {
             Text(String.number(month + 1))
                 .font(WarmFont.title)
                 .foregroundStyle(.white)
-            Text("الشهر")
+            Text(L.monthUnit)
                 .font(WarmFont.caption)
                 .foregroundStyle(Warm.monthLabel)
         }
