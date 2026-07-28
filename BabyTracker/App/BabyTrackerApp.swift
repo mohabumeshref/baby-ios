@@ -15,6 +15,7 @@ struct BabyTrackerApp: App {
     @StateObject private var milestones = MilestoneStore()
     @StateObject private var notifications = NotificationManager.shared
     @StateObject private var router = NotificationRouter.shared
+    @StateObject private var auth = ForumAuth.shared
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -25,12 +26,15 @@ struct BabyTrackerApp: App {
                 .environmentObject(milestones)
                 .environmentObject(notifications)
                 .environmentObject(router)
+                .environmentObject(auth)
                 // The warm palette is a fixed identity - inverting it for dark
                 // mode produces something that reads as a different product,
                 // so the colour scheme is pinned rather than duplicated.
                 .preferredColorScheme(.light)
                 .task {
+                    auth.start()
                     await notifications.refreshAuthorizationStatus()
+                    await RemoteConfigGate.shared.prefetch()
                 }
                 .onChange(of: scenePhase) { phase in
                     guard phase == .active else { return }

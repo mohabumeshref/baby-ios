@@ -41,29 +41,13 @@ struct MainTabView: View {
                     Label(L.tabWeeks, systemImage: "calendar")
                 }
 
-            CommunityPlaceholderView()
+            CommunityView()
                 .tag(2)
                 .tabItem {
                     Label(L.tabCommunity, systemImage: "bubble.left.and.bubble.right.fill")
                 }
         }
         .tint(Warm.brand)
-    }
-}
-
-/// Stands in until ForumKit lands.
-struct CommunityPlaceholderView: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "bubble.left.and.bubble.right")
-                .font(.system(size: 40))
-                .foregroundStyle(Warm.muted)
-            Text(L.communityComingSoon)
-                .font(WarmFont.body)
-                .foregroundStyle(Warm.mutedSub)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .warmBackground()
     }
 }
 

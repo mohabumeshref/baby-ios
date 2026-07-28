@@ -108,9 +108,75 @@ enum L {
         localized(ar: "تنبيه أسبوع جديد", en: "New week reminder")
     }
 
-    // MARK: - Community (placeholder until ForumKit lands)
+    // MARK: - Community
+    //
+    // Arabic copy matches the Android app's res/values/strings.xml so the two
+    // read identically for a user who has both installed.
 
-    static var communityComingSoon: String {
-        localized(ar: "المجتمع قيد الإعداد", en: "Community coming soon")
+    static var community: String { localized(ar: "مجتمعي", en: "Community") }
+
+    // Auth
+    static var signIn: String { localized(ar: "تسجيل الدخول", en: "Sign in") }
+    static var register: String { localized(ar: "تسجيل", en: "Register") }
+    static var signOut: String { localized(ar: "تسجيل الخروج", en: "Sign out") }
+    static var fieldName: String { localized(ar: "الإسم", en: "Name") }
+    static var fieldEmail: String { localized(ar: "البريد الإلكتروني", en: "Email") }
+    static var fieldPassword: String { localized(ar: "كلمة السر", en: "Password") }
+    static var forgotPassword: String { localized(ar: "نسيت كلمة السر", en: "Forgot password") }
+    static var resetPassword: String {
+        localized(ar: "إسترجاع كلمة السر", en: "Reset password")
     }
+    static var resetEmailSent: String {
+        localized(
+            ar: "تم إرسال رابط تجديد كلمة المرور إلى بريدك الإلكتروني",
+            en: "A password reset link has been sent to your email"
+        )
+    }
+    static var signInRequired: String {
+        localized(ar: "الرجاء تسجيل الدخول", en: "Please sign in first")
+    }
+    static var noAccountYet: String {
+        localized(ar: "ليس لديك حساب؟ سجّلي الآن", en: "No account yet? Register")
+    }
+    static var haveAccount: String {
+        localized(ar: "لديك حساب؟ تسجيل الدخول", en: "Have an account? Sign in")
+    }
+    static var sharedAccountNote: String {
+        localized(
+            ar: "إذا كنت تستخدمين تطبيق دليل حملي، يمكنك الدخول بنفس الحساب",
+            en: "If you use My Pregnancy Guide, sign in with the same account"
+        )
+    }
+
+    // Feed
+    static var newPost: String { localized(ar: "نشر", en: "Post") }
+    static var writeSomething: String {
+        localized(ar: "شاركينا ما يجول في خاطرك...", en: "Share what's on your mind...")
+    }
+    static var addImage: String { localized(ar: "إضافة صورة", en: "Add image") }
+    static var anonymous: String { localized(ar: "مجهولة", en: "Anonymous") }
+    static var postAnonymously: String {
+        localized(
+            ar: "لا أرغب بإظهار إسمي في هذا المنشور",
+            en: "Don't show my name on this post"
+        )
+    }
+    static var comments: String { localized(ar: "التعليقات", en: "Comments") }
+    static var addComment: String { localized(ar: "إضافة تعليق", en: "Add comment") }
+    static var commentHint: String { localized(ar: "شاركينا بتعليق...", en: "Add a comment...") }
+    static var awaitingApproval: String {
+        localized(ar: "الرجاء إنتظار موافقة الأدمن", en: "Awaiting admin approval")
+    }
+    static var emptyFeed: String {
+        localized(ar: "لا توجد منشورات بعد", en: "No posts yet")
+    }
+    static var search: String { localized(ar: "بحث", en: "Search") }
+    static var textRequired: String {
+        localized(ar: "الرجاء إضافة النص", en: "Please add some text")
+    }
+    static var somethingWentWrong: String {
+        localized(ar: "حدث خطأ ما، الرجاء المحاولة لاحقاً", en: "Something went wrong, try again later")
+    }
+    static var retry: String { localized(ar: "إعادة المحاولة", en: "Retry") }
+    static var cancel: String { localized(ar: "إلغاء", en: "Cancel") }
 }

@@ -70,6 +70,17 @@ public final class ForumStore {
         )
     }
 
+    /// A single post by id. Used by the detail screen, including when opened
+    /// from a notification tap where the post was never in the feed.
+    public func post(id: String) async throws -> ForumPost {
+        let document = try await postsRef.document(id).getDocument()
+        guard document.exists, var post = try? document.data(as: ForumPost.self) else {
+            throw ForumError.postNotFound
+        }
+        post.docId = document.documentID
+        return post
+    }
+
     /// Posts written by one user (their profile / "منشوراتي").
     /// Includes their unapproved posts - the author should see their own.
     public func posts(byUser uid: String, pageSize: Int = 20) async throws -> [ForumPost] {
