@@ -183,7 +183,7 @@ private struct TierCard: View {
     HomeView()
         .environmentObject({ () -> BabyProfile in
             let p = BabyProfile(defaults: UserDefaults(suiteName: "preview")!)
-            p.birthDate = Calendar.current.date(byAdding: .month, value: -3, to: Date())
+            p.setBirthDate(Calendar.current.date(byAdding: .month, value: -3, to: Date()))
             return p
         }())
         .environmentObject(MilestoneStore(defaults: UserDefaults(suiteName: "preview")!))

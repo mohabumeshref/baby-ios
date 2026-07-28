@@ -85,17 +85,15 @@ struct AuthView: View {
 
     // MARK: - Pieces
 
+    /// No title here - the navigation bar already shows "مجتمعي", and having it
+    /// twice on one screen just reads as a mistake.
     private var header: some View {
-        VStack(spacing: 8) {
-            Text(L.community)
-                .font(WarmFont.display)
-                .foregroundStyle(Warm.ink)
-            Text(L.sharedAccountNote)
-                .font(WarmFont.caption)
-                .foregroundStyle(Warm.mutedSub)
-                .multilineTextAlignment(.center)
-        }
-        .padding(.top, 24)
+        Text(L.sharedAccountNote)
+            .font(WarmFont.caption)
+            .foregroundStyle(Warm.mutedSub)
+            .multilineTextAlignment(.center)
+            .padding(.top, 20)
+            .padding(.horizontal, 8)
     }
 
     private func field(
@@ -152,8 +150,11 @@ struct AuthView: View {
             .frame(height: 50)
             .background(
                 RoundedRectangle(cornerRadius: WarmMetrics.chipRadius, style: .continuous)
+                    // A muted grey disabled state read as a dead slab against
+                    // the cream card. Tinting it with the brand at low opacity
+                    // keeps it clearly inactive but still part of the palette.
                     .fill(canSubmit ? AnyShapeStyle(Warm.brandGradient)
-                                    : AnyShapeStyle(Warm.muted.opacity(0.4)))
+                                    : AnyShapeStyle(Warm.brandBright.opacity(0.28)))
             )
         }
         .buttonStyle(.plain)

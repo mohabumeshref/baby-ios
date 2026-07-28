@@ -84,7 +84,7 @@ struct BirthDateOnboardingView: View {
             }
 
             Button {
-                profile.birthDate = selected
+                profile.setBirthDate(selected)
                 Task {
                     // Ask for notifications here, not at launch: by this point
                     // the user has told us about their baby, so a "new week"

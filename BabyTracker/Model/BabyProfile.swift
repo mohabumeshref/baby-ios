@@ -19,23 +19,38 @@ final class BabyProfile: ObservableObject {
 
     private let defaults: UserDefaults
 
-    @Published var birthDate: Date? {
-        didSet {
-            if let birthDate {
-                defaults.set(birthDate.timeIntervalSince1970, forKey: Keys.birthDate)
-            } else {
-                defaults.removeObject(forKey: Keys.birthDate)
-            }
-        }
-    }
+    /// Read-only from outside; changes go through `setBirthDate`.
+    ///
+    /// This used to be a settable `@Published` with a `didSet` that persisted.
+    /// Assigning through the property wrapper in `init` fires that observer, so
+    /// the DEBUG screenshot seed was writing a fake birth date into UserDefaults
+    /// - which then survived into later launches and skipped onboarding
+    /// entirely. Persisting explicitly instead of as a side effect makes
+    /// "load" and "save" impossible to confuse.
+    @Published private(set) var birthDate: Date?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+
+        // A seeded date (DEBUG screenshot runs only) wins for this launch but
+        // is deliberately never written back.
+        if let seeded = ScreenshotSeed.birthDate {
+            self.birthDate = seeded
+            return
+        }
+
         let stored = defaults.double(forKey: Keys.birthDate)
-        // A seeded date (DEBUG screenshot runs only) wins, so the job can skip
-        // onboarding without persisting anything.
-        self.birthDate = ScreenshotSeed.birthDate
-            ?? (stored > 0 ? Date(timeIntervalSince1970: stored) : nil)
+        self.birthDate = stored > 0 ? Date(timeIntervalSince1970: stored) : nil
+    }
+
+    /// Sets and persists the birth date. The only path that writes to disk.
+    func setBirthDate(_ date: Date?) {
+        birthDate = date
+        if let date {
+            defaults.set(date.timeIntervalSince1970, forKey: Keys.birthDate)
+        } else {
+            defaults.removeObject(forKey: Keys.birthDate)
+        }
     }
 
     var isOnboarded: Bool { birthDate != nil }

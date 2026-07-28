@@ -267,7 +267,7 @@ struct WeeksView: View {
     WeeksView()
         .environmentObject({ () -> BabyProfile in
             let p = BabyProfile(defaults: UserDefaults(suiteName: "preview")!)
-            p.birthDate = Calendar.current.date(byAdding: .day, value: -81, to: Date())
+            p.setBirthDate(Calendar.current.date(byAdding: .day, value: -81, to: Date()))
             return p
         }())
         .environment(\.layoutDirection, .rightToLeft)
