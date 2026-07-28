@@ -89,6 +89,25 @@ enum L {
     static var previousWeek: String { localized(ar: "الأسبوع السابق", en: "Previous week") }
     static var nextWeek: String { localized(ar: "الأسبوع التالي", en: "Next week") }
 
+    // MARK: - Notifications
+    //
+    // Android's copy is in TimeAlarm.java. The title there is written
+    // "انـا و طفلي" with a decorative tatweel; this uses the clean app name so
+    // it matches CFBundleDisplayName and the App Store listing.
+
+    static var weeklyReminderTitle: String {
+        localized(ar: "أنا و طفلي - أسبوع جديد", en: "Me & My Baby - a new week")
+    }
+    static var weeklyReminderBody: String {
+        localized(
+            ar: "لقد بدأ طفلك اسبوعا جديدا من عامه الاول",
+            en: "Your baby has started a new week of their first year"
+        )
+    }
+    static var weeklyReminderSetting: String {
+        localized(ar: "تنبيه أسبوع جديد", en: "New week reminder")
+    }
+
     // MARK: - Community (placeholder until ForumKit lands)
 
     static var communityComingSoon: String {

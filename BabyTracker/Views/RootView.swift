@@ -71,6 +71,7 @@ struct CommunityPlaceholderView: View {
 /// so this is the only thing it must ask for.
 struct BirthDateOnboardingView: View {
     @EnvironmentObject private var profile: BabyProfile
+    @EnvironmentObject private var notifications: NotificationManager
     @State private var selected = Date()
 
     var body: some View {
@@ -100,6 +101,14 @@ struct BirthDateOnboardingView: View {
 
             Button {
                 profile.birthDate = selected
+                Task {
+                    // Ask for notifications here, not at launch: by this point
+                    // the user has told us about their baby, so a "new week"
+                    // reminder is an obvious benefit rather than an
+                    // unexplained system prompt on a cold first run.
+                    await notifications.requestAuthorizationIfNeeded()
+                    await notifications.scheduleWeeklyReminder(birthDate: selected)
+                }
             } label: {
                 Text(L.continueAction)
                     .font(WarmFont.heading)
@@ -123,5 +132,6 @@ struct BirthDateOnboardingView: View {
 #Preview("Onboarding") {
     BirthDateOnboardingView()
         .environmentObject(BabyProfile(defaults: UserDefaults(suiteName: "preview")!))
+        .environmentObject(NotificationManager.shared)
         .environment(\.layoutDirection, .rightToLeft)
 }

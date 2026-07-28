@@ -2,23 +2,24 @@
 //  AppDelegate.swift
 //  BabyTracker
 //
-//  SwiftUI lifecycle needs a UIApplicationDelegate only for Firebase
-//  Messaging and APNs registration.
+//  SwiftUI lifecycle needs a UIApplicationDelegate only for Firebase Messaging
+//  and APNs.
 //
-//  IMPORTANT: this app deliberately sends no push notifications itself.
-//  Forum pushes are produced server-side by the Cloud Functions in the shared
+//  IMPORTANT: this app deliberately sends no push notifications. Forum pushes
+//  are produced server-side by the Cloud Functions in the shared
 //  pregnancy-tracker-57bf7 project (onAnswerCreated / onPostCreated /
 //  onReplyAdded), which fire on Firestore writes and are app-agnostic. All
-//  this app has to do is keep its FCM token in User/{uid}.token and handle
-//  taps. Adding a client-side sender would produce duplicate notifications -
-//  which is what the Android baby app currently does.
+//  this app does is keep its FCM token in User/{uid}.token and handle taps.
+//  Adding a client-side sender would produce duplicate notifications - which
+//  is what the Android baby app currently does.
 //
 
 import UIKit
 import FirebaseCore
 import FirebaseMessaging
 
-final class AppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate {
+final class AppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate,
+                         UNUserNotificationCenterDelegate {
 
     func application(
         _ application: UIApplication,
@@ -27,21 +28,67 @@ final class AppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate {
         // GoogleService-Info.plist is supplied per-environment and is absent on
         // a fresh checkout. Configuring without it raises, which would take the
         // simulator screenshot job down with it, so probe for it first.
-        if Bundle.main.url(forResource: "GoogleService-Info", withExtension: "plist") != nil {
-            FirebaseApp.configure()
-            Messaging.messaging().delegate = self
-        } else {
+        guard Bundle.main.url(forResource: "GoogleService-Info", withExtension: "plist") != nil else {
             print("⚠️ GoogleService-Info.plist not bundled — Firebase is disabled for this run.")
+            return true
         }
+
+        FirebaseApp.configure()
+        Messaging.messaging().delegate = self
+        UNUserNotificationCenter.current().delegate = self
+
+        // NOTE: no requestAuthorization here, and no registerForRemoteNotifications.
+        // Both happen after onboarding via NotificationManager, so the system
+        // prompt appears when the user has context for it rather than on the
+        // very first launch.
 
         return true
     }
 
-    // MARK: - Push token
+    // MARK: - APNs
+
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        Messaging.messaging().apnsToken = deviceToken
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("APNs registration failed: \(error.localizedDescription)")
+    }
+
+    // MARK: - FCM token
 
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        // Persisting the token to Firestore lands with the notifications work;
-        // it needs the auth session that the forum layer sets up.
-        print("FCM registration token: \(fcmToken ?? "nil")")
+        guard let fcmToken, !fcmToken.isEmpty else { return }
+        Task { @MainActor in
+            try? await ForumStore.shared.saveFCMToken(fcmToken)
+        }
+    }
+
+    // MARK: - Taps and foreground presentation
+
+    /// Notifications that arrive while the app is open still get shown. The
+    /// forum feed does not live-update from a push, so suppressing these would
+    /// silently drop the only signal that a reply arrived.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        [.banner, .sound, .list]
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        let userInfo = response.notification.request.content.userInfo
+        await MainActor.run {
+            NotificationRouter.shared.handle(userInfo: userInfo)
+        }
     }
 }
