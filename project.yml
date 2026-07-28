@@ -25,6 +25,10 @@ settings:
     DEVELOPMENT_TEAM: 78CLZ67RBG   # same team as pt-ios; confirm
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"   # testflight.yml overwrites via agvtool
+    # agvtool requires apple-generic versioning; without it `agvtool
+    # new-version` reports success but changes nothing, and every TestFlight
+    # upload would collide on build number 1.
+    VERSIONING_SYSTEM: apple-generic
     SWIFT_VERSION: "5.9"
     ENABLE_USER_SCRIPT_SANDBOXING: NO
     # Arabic is the development language; the app is RTL-first.
