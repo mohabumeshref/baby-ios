@@ -12,10 +12,10 @@
 		<string>en</string>
 	</array>
 
-	<!-- PLACEHOLDER: replace with the AdMob App ID for THIS app.
-	     Do not reuse the pregnancy tracker's (~1525007655). -->
+	<!-- AdMob App ID for this app. Same publisher account as the pregnancy
+	     tracker, different app (that one is ~1525007655). -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-0000000000000000~0000000000</string>
+	<string>ca-app-pub-6789336355455489~9475789471</string>
 	<key>GADIsAdManagerApp</key>
 	<true/>
 

@@ -14,7 +14,7 @@ env:
   PROJECT: BabyTracker.xcodeproj
   SCHEME: BabyTracker
   # Must match project.yml and the provisioning profile.
-  BUNDLE_ID: com.meshref.arabicbaby
+  BUNDLE_ID: com.wecare.arabicbaby
 
 jobs:
   build:

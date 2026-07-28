@@ -27,7 +27,7 @@ on:
 env:
   PROJECT: BabyTracker.xcodeproj
   SCHEME: BabyTracker
-  BUNDLE_ID: com.meshref.arabicbaby
+  BUNDLE_ID: com.wecare.arabicbaby
   SIMULATOR: 'iPhone 16'
 
 jobs:

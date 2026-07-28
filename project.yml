@@ -10,7 +10,7 @@
 name: BabyTracker
 
 options:
-  bundleIdPrefix: com.meshref
+  bundleIdPrefix: com.wecare
   deploymentTarget:
     iOS: "16.0"
   developmentLanguage: ar
@@ -19,10 +19,9 @@ options:
 
 settings:
   base:
-    # PLACEHOLDER - confirm with the Apple Developer account before the first
-    # TestFlight upload. Must match the App ID, the provisioning profile, and
-    # the iOS app registered in the Firebase project.
-    PRODUCT_BUNDLE_IDENTIFIER: com.meshref.arabicbaby
+    # Must match the App ID in the Apple Developer portal, the provisioning
+    # profile, and the iOS app registered in the Firebase project.
+    PRODUCT_BUNDLE_IDENTIFIER: com.wecare.arabicbaby
     DEVELOPMENT_TEAM: 78CLZ67RBG   # same team as pt-ios; confirm
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"   # testflight.yml overwrites via agvtool
@@ -88,7 +87,7 @@ targets:
         product: FirebaseStorage
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.meshref.arabicbaby.forumkit
+        PRODUCT_BUNDLE_IDENTIFIER: com.wecare.arabicbaby.forumkit
         GENERATE_INFOPLIST_FILE: YES
 
   BabyTrackerTests:
@@ -102,7 +101,7 @@ targets:
     settings:
       base:
         # Must not inherit the app's bundle id from the project-level setting.
-        PRODUCT_BUNDLE_IDENTIFIER: com.meshref.arabicbaby.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.wecare.arabicbaby.tests
         GENERATE_INFOPLIST_FILE: YES
 
 schemes:

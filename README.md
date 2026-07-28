@@ -51,11 +51,17 @@ These are placeholders in the repo and must be replaced before a real build:
 
 | What | Where | Note |
 |---|---|---|
-| Bundle ID | `project.yml`, `testflight.yml`, `screenshots.yml` | currently `com.meshref.arabicbaby` |
-| `GoogleService-Info.plist` | `BabyTracker/` | new iOS app registered in `pregnancy-tracker-57bf7` |
-| AdMob App ID | `BabyTracker/Info.plist` | must NOT reuse the pregnancy tracker's |
-| AdMob unit IDs | design system / ad layer | banner, interstitial, app-open |
-| Cairo font files | `BabyTracker/Resources/` | five weights, listed in `Info.plist` |
+| `GoogleService-Info.plist` | `BabyTracker/` | new iOS app registered in `pregnancy-tracker-57bf7` under `com.wecare.arabicbaby` |
+| App icon | `BabyTracker/Assets.xcassets/AppIcon.appiconset` | 1024×1024 placeholder is empty |
+
+Settled:
+
+- **Bundle ID** — `com.wecare.arabicbaby`
+- **AdMob App ID** — `ca-app-pub-6789336355455489~9475789471` (`Info.plist`)
+- **AdMob units** — banner / interstitial / app-open, in [`BabyTracker/Ads/AdConfig.swift`](BabyTracker/Ads/AdConfig.swift).
+  DEBUG builds automatically use Google's test units, so a development run can
+  never file a real impression.
+- **Cairo fonts** — five weights in `BabyTracker/Resources/`
 
 The app runs without `GoogleService-Info.plist` — Firebase init is skipped and
 logged — so the content and UI layers can be built and screenshotted before
