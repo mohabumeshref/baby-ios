@@ -51,13 +51,27 @@ final class KeywordHelperTests: XCTestCase {
         XCTAssertEqual(KeywordHelper.forDocument("40 اسبوع 12 a"), ["اسبوع"])
     }
 
+    /// NOTE: pt-ios's copy of this test expects ["حمل", "ولاده"], which is
+    /// wrong - "ولاده" is 5 chars and starts with و, so the prefix rule strips
+    /// it to "لاده", exactly as testSpecVector documents for "وألم" → "الم".
+    /// The two assertions in that file contradict each other; it was never
+    /// caught because pt-ios's CI archives and uploads but never runs tests.
+    /// The tokenizer is correct and unchanged - only the expectation is fixed.
     func testDedupePreservingOrderAndQueryCap() {
         let text = Array(repeating: "حمل ولاده", count: 20).joined(separator: " ")
             + " توأم غثيان صداع دوخه تعب ارق حرقه انتفاخ املاح سكري"
         let query = KeywordHelper.forQuery(text)
-        XCTAssertEqual(query.count, 10)                          // array-contains-any cap
-        XCTAssertEqual(Array(query.prefix(2)), ["حمل", "ولاده"])  // first-occurrence order
-        XCTAssertEqual(Set(query).count, query.count)             // deduped
+        XCTAssertEqual(query.count, 10)                         // array-contains-any cap
+        XCTAssertEqual(Array(query.prefix(2)), ["حمل", "لاده"])  // first-occurrence order
+        XCTAssertEqual(Set(query).count, query.count)            // deduped
+    }
+
+    /// Pins the و-stripping rule directly, so the behaviour above is asserted
+    /// on purpose rather than as a side effect of an ordering test.
+    func testWawPrefixStripping() {
+        XCTAssertEqual(KeywordHelper.forDocument("ولاده"), ["لاده"])   // 5 chars: stripped
+        XCTAssertEqual(KeywordHelper.forDocument("وألم"), ["الم"])     // 4 chars: stripped
+        XCTAssertEqual(KeywordHelper.forDocument("ولد"), ["ولد"])      // 3 chars: kept
     }
 
     func testOverlap() {
