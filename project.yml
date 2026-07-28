@@ -33,7 +33,11 @@ settings:
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk.git
-    minVersion: "10.0.0"
+    # Pinned to 11.x deliberately. Firestore's Codable support (data(as:),
+    # setData(from:)) shipped as a separate FirebaseFirestoreSwift product in
+    # 10.x - which pt-ios imports - and was folded into FirebaseFirestore in
+    # 11.x. Spanning both majors would make the correct import ambiguous.
+    minVersion: "11.0.0"
     maxVersion: "12.0.0"
   GoogleMobileAds:
     url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
