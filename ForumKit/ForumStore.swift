@@ -21,6 +21,8 @@ import FirebaseAuth
 public enum ForumError: Error {
     case notSignedIn
     case postNotFound
+    /// Firebase was never configured - see ForumKit.isConfigured.
+    case notConfigured
 }
 
 /// One page of feed results plus the cursor needed to fetch the next.
@@ -34,11 +36,21 @@ public struct ForumPage {
 public final class ForumStore {
     public static let shared = ForumStore()
 
-    private let db: Firestore
-    public var currentUid: String? { Auth.auth().currentUser?.uid }
+    // Resolved on demand, never in init. `Firestore.firestore()` raises if
+    // FirebaseApp.configure() has not run, and this type is constructed during
+    // SwiftUI scene setup - evaluating it eagerly crashed the app before its
+    // first frame whenever GoogleService-Info.plist was absent.
+    private var db: Firestore { Firestore.firestore() }
 
-    public init(db: Firestore = .firestore()) {
-        self.db = db
+    public var currentUid: String? {
+        guard ForumKit.isConfigured else { return nil }
+        return Auth.auth().currentUser?.uid
+    }
+
+    public init() {}
+
+    private func requireConfigured() throws {
+        guard ForumKit.isConfigured else { throw ForumError.notConfigured }
     }
 
     private var postsRef: CollectionReference {
@@ -55,6 +67,7 @@ public final class ForumStore {
     /// can come back partly empty when unapproved posts are in range, which is
     /// why `hasMore` follows the cursor rather than the filtered count.
     public func feed(pageSize: Int = 10, after cursor: DocumentSnapshot? = nil) async throws -> ForumPage {
+        try requireConfigured()
         var query: Query = postsRef
             .order(by: ForumKit.Field.timestamp, descending: true)
             .limit(to: pageSize)
@@ -73,6 +86,7 @@ public final class ForumStore {
     /// A single post by id. Used by the detail screen, including when opened
     /// from a notification tap where the post was never in the feed.
     public func post(id: String) async throws -> ForumPost {
+        try requireConfigured()
         let document = try await postsRef.document(id).getDocument()
         guard document.exists, var post = try? document.data(as: ForumPost.self) else {
             throw ForumError.postNotFound
@@ -84,6 +98,7 @@ public final class ForumStore {
     /// Posts written by one user (their profile / "منشوراتي").
     /// Includes their unapproved posts - the author should see their own.
     public func posts(byUser uid: String, pageSize: Int = 20) async throws -> [ForumPost] {
+        try requireConfigured()
         let snapshot = try await postsRef
             .whereField(ForumKit.Field.uid, isEqualTo: uid)
             .order(by: ForumKit.Field.timestamp, descending: true)
@@ -96,6 +111,7 @@ public final class ForumStore {
     /// Keyword search, same query shape as Android's `searchPosts`.
     /// Results are ranked client-side by token overlap, then recency.
     public func search(_ text: String, limit: Int = 25) async throws -> [ForumPost] {
+        try requireConfigured()
         let tokens = KeywordHelper.forQuery(text)
         guard !tokens.isEmpty else { return [] }
 
@@ -121,7 +137,11 @@ public final class ForumStore {
         postId: String,
         onChange: @escaping ([ForumAnswer]) -> Void
     ) -> ListenerRegistration {
-        postsRef.document(postId)
+        // Can't throw here without changing every call site, so hand back an
+        // inert registration instead. The caller removes it as normal.
+        guard ForumKit.isConfigured else { return InertListener() }
+
+        return postsRef.document(postId)
             .collection(ForumKit.Collection.answers)
             .order(by: ForumKit.Field.timestamp, descending: false)
             .addSnapshotListener { snapshot, _ in
@@ -150,6 +170,7 @@ public final class ForumStore {
         autoApprove: Bool,
         mentions: [Mention]?
     ) async throws -> String {
+        try requireConfigured()
         guard let uid = currentUid else { throw ForumError.notSignedIn }
 
         let mentionedUids = MentionHelper.mentionedUids(mentions, excluding: uid)
@@ -185,6 +206,7 @@ public final class ForumStore {
         personImage: String?,
         mentions: [Mention]? = nil
     ) async throws {
+        try requireConfigured()
         guard let uid = currentUid else { throw ForumError.notSignedIn }
 
         let answer = ForumAnswer(
@@ -214,6 +236,7 @@ public final class ForumStore {
         answerId: String,
         reply: ForumAnswer
     ) async throws {
+        try requireConfigured()
         guard currentUid != nil else { throw ForumError.notSignedIn }
         let encoded = try Firestore.Encoder().encode(reply)
 
@@ -227,6 +250,7 @@ public final class ForumStore {
     /// Likes are stored as the uid list in `array`; `likes` is a denormalised
     /// count kept in step with it.
     public func setLike(postId: String, liked: Bool) async throws {
+        try requireConfigured()
         guard let uid = currentUid else { throw ForumError.notSignedIn }
 
         try await postsRef.document(postId).updateData([
@@ -238,6 +262,7 @@ public final class ForumStore {
     }
 
     public func incrementViews(postId: String) async throws {
+        try requireConfigured()
         try await postsRef.document(postId).updateData([
             ForumKit.Field.views: FieldValue.increment(Int64(1))
         ])
@@ -248,6 +273,7 @@ public final class ForumStore {
     /// Followers live at `Follow/{authorUid}/Followers/{followerUid}` with the
     /// follower's uid as the document id - that is what `onPostCreated` reads.
     public func setFollowing(authorUid: String, following: Bool) async throws {
+        try requireConfigured()
         guard let uid = currentUid else { throw ForumError.notSignedIn }
 
         let ref = db.collection(ForumKit.Collection.follow)
@@ -263,6 +289,7 @@ public final class ForumStore {
     }
 
     public func isFollowing(authorUid: String) async throws -> Bool {
+        try requireConfigured()
         guard let uid = currentUid else { return false }
         let doc = try await db.collection(ForumKit.Collection.follow)
             .document(authorUid)
@@ -286,6 +313,7 @@ public final class ForumStore {
     /// to a `User/{uid}/tokens/{token}` subcollection in all three apps plus
     /// the Cloud Functions.
     public func saveFCMToken(_ token: String) async throws {
+        try requireConfigured()
         guard let uid = currentUid, !token.isEmpty else { return }
         try await db.collection(ForumKit.Collection.users).document(uid)
             .setData([ForumKit.Field.token: token], merge: true)
@@ -302,4 +330,10 @@ public final class ForumStore {
     private func decodeApproved(_ documents: [QueryDocumentSnapshot]) -> [ForumPost] {
         documents.compactMap(decode).filter(\.status)
     }
+}
+
+/// A ListenerRegistration that was never attached to anything. Returned when
+/// Firebase is unconfigured so callers can hold and remove it as usual.
+private final class InertListener: NSObject, ListenerRegistration {
+    func remove() {}
 }

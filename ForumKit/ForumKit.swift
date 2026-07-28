@@ -21,8 +21,18 @@
 //
 
 import Foundation
+import FirebaseCore
 
 public enum ForumKit {
+
+    /// Whether Firebase has been configured.
+    ///
+    /// `GoogleService-Info.plist` is not in the repo, so CI and the screenshot
+    /// job run without it and `FirebaseApp.configure()` is skipped. Touching
+    /// Firestore or Auth in that state raises FIRIllegalStateException and
+    /// kills the process, so every entry point into this layer checks here
+    /// first. In a real build the plist is present and this is always true.
+    public static var isConfigured: Bool { FirebaseApp.app() != nil }
 
     /// Identifies which app created a post. The Android baby app writes 2 and
     /// the pregnancy tracker's iOS app writes 3; this app takes the next value.

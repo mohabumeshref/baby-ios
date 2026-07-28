@@ -51,6 +51,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate,
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
+        // Permission can be granted in a build with no GoogleService-Info.plist
+        // (CI, screenshots), and Messaging.messaging() raises when Firebase was
+        // never configured.
+        guard ForumKit.isConfigured else { return }
         Messaging.messaging().apnsToken = deviceToken
     }
 

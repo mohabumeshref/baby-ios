@@ -18,7 +18,10 @@ import FirebaseFirestore
 public final class ForumAuth: ObservableObject {
     public static let shared = ForumAuth()
 
-    private let db: Firestore
+    // Resolved on demand, never in init - see the same note in ForumStore.
+    // Evaluating Firestore.firestore() as a default argument crashed the app
+    // during SwiftUI scene setup whenever Firebase was unconfigured.
+    private var db: Firestore { Firestore.firestore() }
     private var handle: AuthStateDidChangeListenerHandle?
 
     /// The signed-in Firebase user, or nil.
@@ -29,13 +32,11 @@ public final class ForumAuth: ObservableObject {
     public var isSignedIn: Bool { user != nil }
     public var uid: String? { user?.uid }
 
-    public init(db: Firestore = .firestore()) {
-        self.db = db
-    }
+    public init() {}
 
     /// Starts observing auth state. Safe to call more than once.
     public func start() {
-        guard handle == nil else { return }
+        guard ForumKit.isConfigured, handle == nil else { return }
         handle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             Task { @MainActor in
                 self?.user = user
@@ -51,6 +52,7 @@ public final class ForumAuth: ObservableObject {
     // MARK: - Sign in / register
 
     public func signIn(email: String, password: String) async throws {
+        guard ForumKit.isConfigured else { throw ForumError.notConfigured }
         let result = try await Auth.auth().signIn(withEmail: email, password: password)
         user = result.user
         await loadProfile()
@@ -60,6 +62,7 @@ public final class ForumAuth: ObservableObject {
     /// document. The order matters: the document stores the display name, so
     /// the profile change has to commit first or the document records nil.
     public func register(name: String, email: String, password: String) async throws {
+        guard ForumKit.isConfigured else { throw ForumError.notConfigured }
         let result = try await Auth.auth().createUser(withEmail: email, password: password)
 
         let change = result.user.createProfileChangeRequest()
@@ -80,12 +83,14 @@ public final class ForumAuth: ObservableObject {
     }
 
     public func signOut() throws {
+        guard ForumKit.isConfigured else { throw ForumError.notConfigured }
         try Auth.auth().signOut()
         user = nil
         profile = nil
     }
 
     public func sendPasswordReset(email: String) async throws {
+        guard ForumKit.isConfigured else { throw ForumError.notConfigured }
         try await Auth.auth().sendPasswordReset(withEmail: email)
     }
 
@@ -93,6 +98,7 @@ public final class ForumAuth: ObservableObject {
     /// removing them would tear holes in conversations the other apps' users
     /// are still reading.
     public func deleteAccount() async throws {
+        guard ForumKit.isConfigured else { throw ForumError.notConfigured }
         guard let user else { throw ForumError.notSignedIn }
         try await db.collection(ForumKit.Collection.users).document(user.uid).delete()
         try await user.delete()
@@ -103,7 +109,7 @@ public final class ForumAuth: ObservableObject {
     // MARK: - Profile
 
     private func loadProfile() async {
-        guard let uid = user?.uid else { return }
+        guard ForumKit.isConfigured, let uid = user?.uid else { return }
         let snapshot = try? await db.collection(ForumKit.Collection.users)
             .document(uid).getDocument()
         profile = try? snapshot?.data(as: ForumUser.self)
