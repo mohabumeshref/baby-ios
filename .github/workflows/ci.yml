@@ -52,6 +52,15 @@ jobs:
       - name: Build
         run: |
           set -o pipefail
+          # xcpretty is not guaranteed to be on the runner image, and piping
+          # into a missing binary would fail the step even on a good build.
+          # Fall back to raw xcodebuild output rather than pretending to fail.
+          if command -v xcpretty >/dev/null 2>&1; then
+            FORMATTER="xcpretty"
+          else
+            FORMATTER="cat"
+          fi
+
           xcodebuild build \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
@@ -59,4 +68,20 @@ jobs:
             -destination 'generic/platform=iOS' \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
             CODE_SIGNING_ALLOWED=NO \
-            | xcpretty && exit ${PIPESTATUS[0]}
+            | $FORMATTER
+
+      # Surfaces the actual compiler diagnostics when the pretty formatter
+      # swallowed them.
+      - name: Show errors
+        if: failure()
+        run: |
+          echo "::group::Build errors"
+          xcodebuild build \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
+            CODE_SIGNING_ALLOWED=NO 2>&1 \
+            | grep -E "error:|warning:|note:" | head -60 || true
+          echo "::endgroup::"

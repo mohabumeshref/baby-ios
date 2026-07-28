@@ -52,6 +52,9 @@ targets:
       - path: BabyTracker
         excludes:
           - "**/.DS_Store"
+          # Referenced via INFOPLIST_FILE; including it as a source too makes
+          # it a bundled resource as well.
+          - "Info.plist"
     dependencies:
       - package: Firebase
         product: FirebaseAuth
