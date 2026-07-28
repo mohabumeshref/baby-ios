@@ -99,6 +99,11 @@ targets:
     dependencies:
       - target: BabyTracker
       - target: ForumKit
+    settings:
+      base:
+        # Must not inherit the app's bundle id from the project-level setting.
+        PRODUCT_BUNDLE_IDENTIFIER: com.meshref.arabicbaby.tests
+        GENERATE_INFOPLIST_FILE: YES
 
 schemes:
   BabyTracker:
