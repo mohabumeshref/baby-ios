@@ -55,6 +55,11 @@ targets:
           # Referenced via INFOPLIST_FILE; including it as a source too makes
           # it a bundled resource as well.
           - "Info.plist"
+      # ForumKit is compiled into the app rather than being its own framework
+      # target - see the note at the bottom of this file.
+      - path: ForumKit
+        excludes:
+          - "**/.DS_Store"
     dependencies:
       - package: Firebase
         product: FirebaseAuth
@@ -70,32 +75,12 @@ targets:
         product: FirebaseRemoteConfig
       - package: GoogleMobileAds
         product: GoogleMobileAds
-      - target: ForumKit
     settings:
       base:
         INFOPLIST_FILE: BabyTracker/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1"   # iPhone only, matching the Android app's scope
-
-  # The forum layer lives in its own target so it stays free of app-specific
-  # code and can later be lifted into pt-ios rather than maintained twice.
-  ForumKit:
-    type: framework
-    platform: iOS
-    sources:
-      - ForumKit
-    dependencies:
-      - package: Firebase
-        product: FirebaseAuth
-      - package: Firebase
-        product: FirebaseFirestore
-      - package: Firebase
-        product: FirebaseStorage
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.wecare.arabicbaby.forumkit
-        GENERATE_INFOPLIST_FILE: YES
 
   BabyTrackerTests:
     type: bundle.unit-test
@@ -104,7 +89,6 @@ targets:
       - BabyTrackerTests
     dependencies:
       - target: BabyTracker
-      - target: ForumKit
     settings:
       base:
         # Must not inherit the app's bundle id from the project-level setting.
@@ -116,7 +100,6 @@ schemes:
     build:
       targets:
         BabyTracker: all
-        ForumKit: all
     test:
       targets:
         - BabyTrackerTests
@@ -124,3 +107,22 @@ schemes:
       config: Debug
     archive:
       config: Release
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Why ForumKit is not its own target
+#
+# It was one, briefly. A dynamic framework target that links Firebase forces
+# SPM to build Firebase's products as dynamic frameworks too (they ship static
+# by default), and dynamic FirebaseFirestore fails to link on arm64 - it can't
+# resolve the gRPC/absl C++ symbols, and FirebaseCore loses its dependency on
+# FirebaseCoreInternal. CI run #1 died exactly there.
+#
+# pt-ios is the counter-example that works: one app target, Firebase linked
+# statically, shipping. So ForumKit is compiled into the app instead.
+#
+# The directory and its `public` API are kept deliberately. Nothing in
+# ForumKit/ may import app code, so lifting it into a real Swift package stays
+# a mechanical move once someone can iterate in Xcode - and a package would
+# not hit this, since SPM resolves static linkage differently than a framework
+# target does.
+# ─────────────────────────────────────────────────────────────────────────────

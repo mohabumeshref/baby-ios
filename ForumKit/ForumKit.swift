@@ -3,12 +3,15 @@
 //
 //  The shared community forum layer.
 //
-//  This lives in its own framework target on purpose. The forum is not a
-//  feature of this app - it is a feature of the *account*, shared across the
-//  Android baby app, the pregnancy tracker, and this app, all backed by the
-//  same Firestore collections in the pregnancy-tracker-57bf7 project. Keeping
-//  it free of app-specific code means pt-ios can adopt it later rather than
-//  the two iOS apps maintaining separate copies of the same schema.
+//  The forum is not a feature of this app - it is a feature of the *account*,
+//  shared across the Android baby app, the pregnancy tracker, and this app,
+//  all backed by the same Firestore collections in the pregnancy-tracker-57bf7
+//  project.
+//
+//  Nothing in this directory may import app code. It compiles into the app
+//  target (a separate framework target forced Firebase to link dynamically and
+//  broke the build - see project.yml), but the isolation is enforced by
+//  convention so lifting it into a shared Swift package stays mechanical.
 //
 //  Schema contract (must not drift):
 //    Post/{postId}                     - the feed

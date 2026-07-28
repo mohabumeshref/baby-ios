@@ -12,7 +12,7 @@
 //
 
 import XCTest
-import ForumKit
+@testable import BabyTracker
 
 final class KeywordHelperTests: XCTestCase {
 
