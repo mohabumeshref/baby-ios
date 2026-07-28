@@ -81,12 +81,14 @@ final class InterstitialAdManager: NSObject, ObservableObject {
 }
 
 extension InterstitialAdManager: GADFullScreenContentDelegate {
-    nonisolated func adDidDismissFullScreenContent(_ ad: GADFullScreenContentAd) {
+    // The delegate takes GADFullScreenPresentingAd - the protocol the ad
+    // conforms to - not a concrete ad type.
+    nonisolated func adDidDismissFullScreenContent(_ ad: any GADFullScreenPresentingAd) {
         Task { @MainActor in await preload() }
     }
 
     nonisolated func ad(
-        _ ad: GADFullScreenContentAd,
+        _ ad: any GADFullScreenPresentingAd,
         didFailToPresentFullScreenContentWithError error: Error
     ) {
         Task { @MainActor in
