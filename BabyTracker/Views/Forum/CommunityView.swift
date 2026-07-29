@@ -122,36 +122,42 @@ struct CommunityView: View {
 
     // MARK: - Feed
 
+    /// A List, not ScrollView+LazyVStack, deliberately: LazyVStack estimates
+    /// upcoming row heights and corrects them as rows materialise, and with
+    /// variable-height cards those corrections read as trembling on a fast
+    /// scroll. List is UITableView underneath - the same machinery pt-ios's
+    /// feed uses - with real cell recycling and height management.
     private var feed: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                if model.isLoading && model.displayedPosts.isEmpty {
-                    ProgressView()
-                        .tint(Warm.brand)
-                        .padding(.top, 60)
-                } else if model.displayedPosts.isEmpty {
-                    emptyState
-                } else {
-                    ForEach(model.displayedPosts) { post in
-                        row(for: post)
-                    }
-
-                    // Fixed-height footer. Inserting and removing a spinner
-                    // changes the content height mid-scroll, which shows up as
-                    // a judder when paging during a fast scroll - the slot is
-                    // permanent and only its contents toggle.
-                    Color.clear
-                        .frame(height: 44)
-                        .overlay {
-                            if model.isLoadingMore {
-                                ProgressView().tint(Warm.brand)
-                            }
-                        }
+        List {
+            if model.isLoading && model.displayedPosts.isEmpty {
+                ProgressView()
+                    .tint(Warm.brand)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
+                    .listRowStyling()
+            } else if model.displayedPosts.isEmpty {
+                emptyState
+                    .listRowStyling()
+            } else {
+                ForEach(model.displayedPosts) { post in
+                    row(for: post)
+                        .listRowStyling()
                 }
+
+                // Fixed-height footer: the slot is permanent, only the spinner
+                // toggles, so paging never changes content height mid-scroll.
+                Color.clear
+                    .frame(height: 44)
+                    .overlay {
+                        if model.isLoadingMore {
+                            ProgressView().tint(Warm.brand)
+                        }
+                    }
+                    .listRowStyling()
             }
-            .padding(.horizontal, WarmMetrics.screenPadding)
-            .padding(.vertical, 12)
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
         .refreshable { await model.loadFirstPage() }
         .searchable(text: $model.query, prompt: L.search)
         .onSubmit(of: .search) { Task { await model.runSearch() } }
@@ -206,6 +212,22 @@ struct CommunityView: View {
                 .foregroundStyle(Warm.mutedSub)
         }
         .padding(.top, 60)
+    }
+}
+
+private extension View {
+    /// Warm-theme List rows: no separators, transparent row chrome, card
+    /// spacing carried by insets instead of stack spacing.
+    func listRowStyling() -> some View {
+        self
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(
+                top: 6,
+                leading: WarmMetrics.screenPadding,
+                bottom: 6,
+                trailing: WarmMetrics.screenPadding
+            ))
     }
 }
 

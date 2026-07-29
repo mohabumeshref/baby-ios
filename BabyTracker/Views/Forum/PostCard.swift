@@ -201,13 +201,25 @@ struct PostCard: View {
         }
         if days == 1 { return "Yesterday" }
 
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
         if days >= 2 && days <= 7 {
-            formatter.dateFormat = "EEEE"
-            return "Last \(formatter.string(from: date))"
+            return "Last \(Self.weekdayFormatter.string(from: date))"
         }
-        formatter.dateFormat = "dd MMM, yyyy"
-        return formatter.string(from: date)
+        return Self.dateFormatter.string(from: date)
     }
+
+    // Static: DateFormatter construction is expensive, and this used to run
+    // inside every row's body - one of the fast-scroll hitch sources.
+    private static let weekdayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "EEEE"
+        return f
+    }()
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "dd MMM, yyyy"
+        return f
+    }()
 }
