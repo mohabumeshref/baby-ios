@@ -35,6 +35,22 @@ enum ImageCache {
     }
 }
 
+extension ImageCache {
+    /// Fire-and-forget warm-up. Called with each feed page's image URLs so a
+    /// downward scroll meets cached images instead of download pop-ins - the
+    /// per-row cache only helps for rows already visited.
+    static func prefetch(_ urls: [String]) {
+        for url in urls where !url.isEmpty && image(for: url) == nil {
+            Task.detached(priority: .utility) {
+                guard let remote = URL(string: url),
+                      let (data, _) = try? await URLSession.shared.data(from: remote),
+                      let loaded = UIImage(data: data) else { return }
+                store(loaded, for: url)
+            }
+        }
+    }
+}
+
 struct CachedAsyncImage: View {
     let url: String
     var contentMode: ContentMode = .fill

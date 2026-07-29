@@ -44,9 +44,21 @@ final class ForumFeedModel: ObservableObject {
             posts = page.posts
             cursor = page.cursor
             hasMore = page.hasMore
+            prefetchImages(for: page.posts)
         } catch {
             errorMessage = L.somethingWentWrong
         }
+    }
+
+    /// Avatars and photos for a page start downloading immediately, so by the
+    /// time the user scrolls to them they render from cache on first frame.
+    private func prefetchImages(for posts: [ForumPost]) {
+        var urls: [String] = []
+        for post in posts {
+            if let u = post.personImage, !u.isEmpty { urls.append(u) }
+            if let u = post.imageUrl, !u.isEmpty { urls.append(u) }
+        }
+        ImageCache.prefetch(urls)
     }
 
     /// Called when the last visible row appears.
@@ -67,6 +79,7 @@ final class ForumFeedModel: ObservableObject {
             posts.append(contentsOf: page.posts)
             cursor = page.cursor
             hasMore = page.hasMore
+            prefetchImages(for: page.posts)
         } catch {
             errorMessage = L.somethingWentWrong
         }

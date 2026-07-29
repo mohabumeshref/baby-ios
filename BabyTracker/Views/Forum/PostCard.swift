@@ -148,6 +148,7 @@ struct PostCard: View {
     /// PT's action pills, matched to its stylePillButton NUMBERS, not just its
     /// shape: 24pt heart / 23pt bubble.right, bold 14 count with a 7pt gap,
     /// min height 44, corner radius 22, soft surface fill.
+    /// Two pills splitting the card's width 50/50.
     private var stats: some View {
         HStack(spacing: 10) {
             Button(action: onLike) {
@@ -159,6 +160,7 @@ struct PostCard: View {
                 )
             }
             .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
 
             statPill(
                 systemName: "bubble.right",
@@ -166,8 +168,7 @@ struct PostCard: View {
                 value: post.answers,
                 tint: Warm.mutedChip
             )
-
-            Spacer()
+            .frame(maxWidth: .infinity)
         }
     }
 
@@ -179,8 +180,7 @@ struct PostCard: View {
                 .font(WarmFont.counter)
         }
         .foregroundStyle(tint)
-        .padding(.horizontal, 14)
-        .frame(minHeight: 44)
+        .frame(maxWidth: .infinity, minHeight: 44)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(Warm.chipOff)
