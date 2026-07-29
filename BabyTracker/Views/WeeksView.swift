@@ -106,7 +106,7 @@ struct WeeksView: View {
             Circle()
                 .fill(Warm.green)
                 .frame(width: 7, height: 7)
-            Text(L.now)
+            Text(L.currentWeek)
                 .font(WarmFont.caption)
                 .foregroundStyle(Warm.brand)
         }
