@@ -306,12 +306,21 @@ private struct AnswerRow: View {
                     }
                 }
 
-                Text(answer.answer)
-                    .font(WarmFont.body)
-                    .foregroundStyle(Warm.bodyInk)
-                    .lineSpacing(4)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                MentionText(text: answer.answer, mentions: answer.mentions)
+
+                // pt-ios allows a photo on a comment; without this those
+                // comments render as text-only here and look truncated.
+                if let image = answer.image, !image.isEmpty {
+                    AsyncImage(url: URL(string: image)) { img in
+                        img.resizable().scaledToFill()
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Warm.chipOff)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 150)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
 
                 // Replies live in the answer's own `answers` array, not as
                 // separate documents - that shape is what onReplyAdded watches.
@@ -322,10 +331,12 @@ private struct AnswerRow: View {
                                 Text(reply.personName ?? L.anonymous)
                                     .font(WarmFont.caption)
                                     .foregroundStyle(Warm.mutedSub)
-                                Text(reply.answer)
-                                    .font(WarmFont.caption)
-                                    .foregroundStyle(Warm.bodyInk)
-                                    .fixedSize(horizontal: false, vertical: true)
+                                MentionText(
+                                    text: reply.answer,
+                                    mentions: reply.mentions,
+                                    font: WarmFont.caption,
+                                    lineSpacing: 2
+                                )
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(8)

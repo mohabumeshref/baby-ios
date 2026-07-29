@@ -11,6 +11,7 @@ struct PostCard: View {
     let post: ForumPost
     let currentUid: String?
     let onLike: () -> Void
+    var onTapMention: ((String, String) -> Void)? = nil
 
     private var isLiked: Bool {
         guard let currentUid else { return false }
@@ -92,13 +93,13 @@ struct PostCard: View {
     // MARK: - Body
 
     private var body_: some View {
-        Text(post.description)
-            .font(WarmFont.body)
-            .foregroundStyle(Warm.bodyInk)
-            .lineSpacing(4)
-            .lineLimit(6)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        // Mentions are stored on posts written by every app, so they must be
+        // rendered here or PT-authored posts look unstyled in this app.
+        MentionText(
+            text: post.description,
+            mentions: post.mentions,
+            onTapMention: onTapMention
+        )
     }
 
     private func attachment(_ urlString: String) -> some View {
