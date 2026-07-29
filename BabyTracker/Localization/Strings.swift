@@ -172,6 +172,16 @@ enum L {
             en: "Don't show my name on this post"
         )
     }
+    /// PT parity: anonymous commenters get a stable pseudonym - the anonymous
+    /// label plus the last four characters of their uid - so two anonymous
+    /// people in the same thread stay distinguishable, while the Cloud
+    /// Function's prefix check still treats them as anonymous.
+    static func anonymousName(uid: String) -> String {
+        anonymous + " " + String(uid.suffix(4)).uppercased()
+    }
+    static var commentAnonymously: String {
+        localized(ar: "لا أرغب بإظهار إسمي", en: "Don't show my name")
+    }
     static var comments: String { localized(ar: "التعليقات", en: "Comments") }
     static var addComment: String { localized(ar: "إضافة تعليق", en: "Add comment") }
     static var commentHint: String { localized(ar: "شاركينا بتعليق...", en: "Add a comment...") }

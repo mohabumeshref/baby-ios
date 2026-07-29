@@ -152,31 +152,36 @@ struct PostCard: View {
 
     // MARK: - Stats
 
+    /// PT's "new design" action pills: icon + count inside a rounded capsule
+    /// (radius ~22 at 44pt height), filled with the soft surface colour.
     private var stats: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: 10) {
             Button(action: onLike) {
-                statLabel(
+                statPill(
                     systemName: isLiked ? "heart.fill" : "heart",
                     value: post.array.count,
-                    tint: isLiked ? Warm.brandDeep : Warm.muted
+                    tint: isLiked ? Warm.brandDeep : Warm.mutedChip
                 )
             }
             .buttonStyle(.plain)
 
-            statLabel(systemName: "bubble.left", value: post.answers, tint: Warm.muted)
+            statPill(systemName: "bubble.left", value: post.answers, tint: Warm.mutedChip)
 
             Spacer()
         }
     }
 
-    private func statLabel(systemName: String, value: Int, tint: Color) -> some View {
-        HStack(spacing: 5) {
+    private func statPill(systemName: String, value: Int, tint: Color) -> some View {
+        HStack(spacing: 7) {
             Image(systemName: systemName)
-                .font(.system(size: 13))
+                .font(.system(size: 14))
             Text(String.number(value))
-                .font(WarmFont.caption)
+                .font(WarmFont.counter)
         }
         .foregroundStyle(tint)
+        .padding(.horizontal, 14)
+        .frame(minHeight: 40)
+        .background(Capsule().fill(Warm.chipOff))
     }
 
     /// Short Latin relative time, matching Android's Post.getPostDate and

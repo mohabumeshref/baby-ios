@@ -25,6 +25,7 @@ struct PostDetailView: View {
     @State private var isSending = false
     @State private var commentPickerItem: PhotosPickerItem?
     @State private var commentImageData: Data?
+    @State private var isAnonymous = false
     @FocusState private var composerFocused: Bool
 
     /// Non-nil while composing a reply to a specific answer.
@@ -92,6 +93,12 @@ struct PostDetailView: View {
 
             composer
         }
+        .scrollDismissesKeyboard(.immediately)
+        .simultaneousGesture(
+            // Tapping anywhere outside the composer drops the keyboard.
+            // simultaneous, not exclusive - buttons underneath must keep firing.
+            TapGesture().onEnded { composerFocused = false }
+        )
         .warmBackground()
         .navigationTitle(L.community)
         .navigationBarTitleDisplayMode(.inline)
@@ -231,6 +238,23 @@ struct PostDetailView: View {
                 }
             }
 
+            // PT parity: a plain checkbox row. Applies to whatever is sent -
+            // comment or reply.
+            Button {
+                isAnonymous.toggle()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: isAnonymous ? "checkmark.square.fill" : "square")
+                        .foregroundStyle(isAnonymous ? Warm.brand : Warm.muted)
+                    Text(L.commentAnonymously)
+                        .font(WarmFont.caption)
+                        .foregroundStyle(Warm.mutedSub)
+                    Spacer()
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 4)
+
             HStack(spacing: 8) {
                 PhotosPicker(selection: $commentPickerItem, matching: .images) {
                     Image(systemName: "photo")
@@ -296,12 +320,20 @@ struct PostDetailView: View {
         let mentions = MentionComposer.validated(draftMentions, against: text)
         let imageUrl = await model.uploadCommentImage(commentImageData)
 
+        // PT parity: anonymous swaps the name for a stable pseudonym and
+        // clears the photo. The pseudonym keeps the anonymous prefix, so the
+        // Cloud Function still suppresses identity-revealing pushes.
+        let name = isAnonymous
+            ? L.anonymousName(uid: auth.uid ?? "")
+            : auth.profile?.name
+        let photo = isAnonymous ? "" : auth.profile?.image_url
+
         if let target = replyTarget {
             await model.addReply(
                 to: target,
                 text: text,
-                personName: auth.profile?.name,
-                personImage: auth.profile?.image_url,
+                personName: name,
+                personImage: photo,
                 imageUrl: imageUrl,
                 mentions: mentions
             )
@@ -309,8 +341,8 @@ struct PostDetailView: View {
         } else {
             await model.addAnswer(
                 text: text,
-                personName: auth.profile?.name,
-                personImage: auth.profile?.image_url,
+                personName: name,
+                personImage: photo,
                 imageUrl: imageUrl,
                 mentions: mentions
             )
