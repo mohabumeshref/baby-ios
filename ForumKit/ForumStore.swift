@@ -17,6 +17,7 @@
 import Foundation
 import FirebaseFirestore
 import FirebaseAuth
+import FirebaseStorage
 
 public enum ForumError: Error {
     case notSignedIn
@@ -494,6 +495,36 @@ public final class ForumStore {
             case .following: return ForumKit.Collection.followings
             }
         }
+    }
+
+    /// Uploads an image and returns its download URL.
+    public func uploadImage(_ data: Data, folder: String) async throws -> String {
+        try requireConfigured()
+        let ref = Storage.storage().reference().child("\(folder)/\(UUID().uuidString).jpg")
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+        _ = try await ref.putDataAsync(data, metadata: metadata)
+        return try await ref.downloadURL().absoluteString
+    }
+
+    /// Adds mentioned users to the post's `notificationarray` so the Cloud
+    /// Function includes them in future reply pushes.
+    ///
+    /// NOTE: this does not itself notify them about the mention. pt-ios sends a
+    /// one-off "you were mentioned" push via its own FCM path for people not
+    /// already in the thread. This app deliberately sends no client-side
+    /// pushes, so a mention of someone outside the thread reaches them on the
+    /// NEXT reply rather than immediately. Closing that gap properly means a
+    /// Cloud Function trigger on mentions - a backend change affecting all
+    /// three apps, not something to slip in here.
+    public func registerMentioned(postId: String, mentions: [Mention]) async throws {
+        try requireConfigured()
+        let uids = MentionHelper.mentionedUids(mentions, excluding: currentUid)
+        guard !uids.isEmpty else { return }
+
+        try await postsRef.document(postId).updateData([
+            ForumKit.Field.notificationArray: FieldValue.arrayUnion(uids)
+        ])
     }
 
     /// Prefix search over user names, for @mention suggestions.

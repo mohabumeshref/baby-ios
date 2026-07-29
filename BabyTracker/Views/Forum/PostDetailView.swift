@@ -10,6 +10,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 import FirebaseFirestore
 
 struct PostDetailView: View {
@@ -20,7 +21,10 @@ struct PostDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var draft = ""
+    @State private var draftMentions: [Mention] = []
     @State private var isSending = false
+    @State private var commentPickerItem: PhotosPickerItem?
+    @State private var commentImageData: Data?
 
     /// Non-nil while composing a reply to a specific answer.
     @State private var replyTarget: ForumAnswer?
@@ -204,12 +208,40 @@ struct PostDetailView: View {
                 .padding(.horizontal, 4)
             }
 
+            if let commentImageData, let ui = UIImage(data: commentImageData) {
+                ZStack(alignment: .topTrailing) {
+                    Image(uiImage: ui)
+                        .resizable().scaledToFill()
+                        .frame(height: 90)
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    Button {
+                        self.commentImageData = nil
+                        self.commentPickerItem = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.white, Color.black.opacity(0.5))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(6)
+                }
+            }
+
             HStack(spacing: 8) {
-                WarmTextField(
+                PhotosPicker(selection: $commentPickerItem, matching: .images) {
+                    Image(systemName: "photo")
+                        .foregroundStyle(Warm.brand)
+                        .frame(width: 34, height: 42)
+                }
+                .onChange(of: commentPickerItem) { item in
+                    Task { commentImageData = try? await item?.loadTransferable(type: Data.self) }
+                }
+
+                MentionInputField(
                     placeholder: replyTarget == nil ? L.commentHint : L.replyHint,
                     text: $draft,
-                    axis: .vertical,
-                    lineLimit: 1...4
+                    mentions: $draftMentions,
+                    participants: model.participants
                 )
 
                 Button {
@@ -242,32 +274,46 @@ struct PostDetailView: View {
     }
 
     private var canSend: Bool {
-        !isSending && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        guard !isSending else { return false }
+        return !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || commentImageData != nil
     }
 
     private func send() async {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty || commentImageData != nil else { return }
 
         isSending = true
         defer { isSending = false }
+
+        // Drop any mention the user typed over before it reaches Firestore -
+        // a stale offset would highlight the wrong words in the other apps.
+        let mentions = MentionComposer.validated(draftMentions, against: text)
+        let imageUrl = await model.uploadCommentImage(commentImageData)
 
         if let target = replyTarget {
             await model.addReply(
                 to: target,
                 text: text,
                 personName: auth.profile?.name,
-                personImage: auth.profile?.image_url
+                personImage: auth.profile?.image_url,
+                imageUrl: imageUrl,
+                mentions: mentions
             )
             replyTarget = nil
         } else {
             await model.addAnswer(
                 text: text,
                 personName: auth.profile?.name,
-                personImage: auth.profile?.image_url
+                personImage: auth.profile?.image_url,
+                imageUrl: imageUrl,
+                mentions: mentions
             )
         }
         draft = ""
+        draftMentions = []
+        commentImageData = nil
+        commentPickerItem = nil
     }
 }
 
@@ -404,15 +450,54 @@ final class PostDetailModel: ObservableObject {
         listener = nil
     }
 
+    /// Everyone already in this thread: the post author plus each commenter.
+    /// Costs nothing - it's built from data already on screen - and these are
+    /// far likelier mention targets than a global name match, which is why
+    /// pt-ios ranks them first too.
+    var participants: [MentionCandidate] {
+        var pool: [MentionCandidate] = []
+        if let post {
+            pool.append(MentionCandidate(
+                uid: post.uid,
+                name: post.personName ?? "",
+                image: post.personImage ?? ""
+            ))
+        }
+        for answer in answers {
+            pool.append(MentionCandidate(
+                uid: answer.uid,
+                name: answer.personName ?? "",
+                image: answer.personImage ?? ""
+            ))
+        }
+        return pool
+    }
+
     // MARK: Answers
 
-    func addAnswer(text: String, personName: String?, personImage: String?) async {
+    func uploadCommentImage(_ data: Data?) async -> String? {
+        guard let data else { return nil }
+        return try? await store.uploadImage(data, folder: "comments")
+    }
+
+    func addAnswer(
+        text: String,
+        personName: String?,
+        personImage: String?,
+        imageUrl: String? = nil,
+        mentions: [Mention] = []
+    ) async {
         guard let postId else { return }
         do {
             try await store.addAnswer(
                 postId: postId, text: text,
-                personName: personName, personImage: personImage
+                imageUrl: imageUrl,
+                personName: personName, personImage: personImage,
+                mentions: mentions.isEmpty ? nil : mentions
             )
+            // Mentioned users join the thread so the Cloud Function includes
+            // them in future reply pushes - same as Android and pt-ios.
+            try? await store.registerMentioned(postId: postId, mentions: mentions)
         } catch {
             errorMessage = L.somethingWentWrong
         }
@@ -422,7 +507,9 @@ final class PostDetailModel: ObservableObject {
         to answer: ForumAnswer,
         text: String,
         personName: String?,
-        personImage: String?
+        personImage: String?,
+        imageUrl: String? = nil,
+        mentions: [Mention] = []
     ) async {
         guard let postId, let answerId = answer.id else { return }
         do {
@@ -432,10 +519,13 @@ final class PostDetailModel: ObservableObject {
                 text: text,
                 personName: personName,
                 personImage: personImage,
+                imageUrl: imageUrl,
                 // Recorded so the reply can say who it addresses, matching
                 // what pt-ios writes.
-                replyToName: answer.personName
+                replyToName: answer.personName,
+                mentions: mentions.isEmpty ? nil : mentions
             )
+            try? await store.registerMentioned(postId: postId, mentions: mentions)
         } catch {
             errorMessage = L.somethingWentWrong
         }
