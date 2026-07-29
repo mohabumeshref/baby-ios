@@ -123,6 +123,10 @@ jobs:
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
           security import $CERT_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          # Required now that the ARCHIVE signs: without it codesign blocks on
+          # an interactive keychain prompt that CI can never answer.
+          security set-key-partition-list -S apple-tool:,apple: \
+            -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH >/dev/null
           security list-keychain -d user -s $KEYCHAIN_PATH
 
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
@@ -145,6 +149,15 @@ jobs:
             -scheme "$SCHEME" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm"
 
+      # Signed AT ARCHIVE TIME, deliberately.
+      #
+      # pt-ios archives with CODE_SIGNING_ALLOWED=NO and signs only at export.
+      # That skips the entitlements step entirely - Xcode never writes the
+      # .xcent - so `aps-environment` from BabyTracker.entitlements never
+      # reaches the binary, and export re-signs using only the provisioning
+      # profile's baseline entitlements. Builds 2-4 shipped without the push
+      # entitlement for exactly this reason: the app installs and runs fine and
+      # silently never receives a notification.
       - name: Archive
         if: steps.guard.outputs.configured == 'true'
         run: |
@@ -155,7 +168,27 @@ jobs:
             -destination "generic/platform=iOS" \
             -archivePath "$RUNNER_TEMP/app.xcarchive" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm" \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$PP_UUID" \
+            DEVELOPMENT_TEAM="$TEAM_ID"
+
+      # Catch a regression here rather than after a TestFlight round trip and a
+      # confused "why don't notifications arrive" debugging session.
+      - name: Verify entitlements
+        if: steps.guard.outputs.configured == 'true'
+        run: |
+          APP="$RUNNER_TEMP/app.xcarchive/Products/Applications/BabyTracker.app"
+          echo "::group::Embedded entitlements"
+          codesign -d --entitlements :- "$APP" 2>/dev/null || true
+          echo "::endgroup::"
+
+          if codesign -d --entitlements :- "$APP" 2>/dev/null | grep -q "aps-environment"; then
+            echo "aps-environment present"
+          else
+            echo "::error::aps-environment missing - push notifications would not work."
+            exit 1
+          fi
 
       - name: Export IPA
         if: steps.guard.outputs.configured == 'true'
