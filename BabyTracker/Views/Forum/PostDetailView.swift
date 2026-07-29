@@ -2,7 +2,7 @@
 //  PostDetailView.swift
 //  BabyTracker
 //
-//  A post with its answers, and the box to add one.
+//  A post with its answers, replies, and the box to add one.
 //
 //  Adding an answer is what triggers the push to everyone in the post's
 //  notificationarray - the Cloud Function fires on the write. There is no
@@ -17,9 +17,30 @@ struct PostDetailView: View {
 
     @EnvironmentObject private var auth: ForumAuth
     @StateObject private var model = PostDetailModel()
+    @Environment(\.dismiss) private var dismiss
 
     @State private var draft = ""
     @State private var isSending = false
+
+    /// Non-nil while composing a reply to a specific answer.
+    @State private var replyTarget: ForumAnswer?
+
+    // Post actions
+    @State private var showDeletePostConfirm = false
+    @State private var showReportConfirm = false
+    @State private var showEditPost = false
+
+    // Answer actions
+    @State private var answerPendingDelete: ForumAnswer?
+    @State private var answerBeingEdited: ForumAnswer?
+    @State private var editDraft = ""
+
+    @State private var toast: String?
+
+    private var isMyPost: Bool {
+        guard let uid = auth.uid, let post = model.post else { return false }
+        return post.uid == uid
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -29,12 +50,11 @@ struct PostDetailView: View {
                         PostCard(
                             post: post,
                             currentUid: auth.uid,
-                            onLike: {
-                                Task { await model.toggleLike(uid: auth.uid) }
-                            }
+                            onLike: { Task { await model.toggleLike(uid: auth.uid) } }
                         )
                     } else if model.isLoading {
-                        ProgressView().tint(Warm.brand).padding(.top, 40)
+                        ProgressView().tint(Warm.brand)
+                            .padding(.top, 40)
                             .frame(maxWidth: .infinity)
                     }
 
@@ -45,7 +65,16 @@ struct PostDetailView: View {
                             .padding(.top, 4)
 
                         ForEach(model.answers) { answer in
-                            AnswerRow(answer: answer)
+                            AnswerRow(
+                                answer: answer,
+                                isMine: answer.uid == auth.uid,
+                                onReply: { replyTarget = answer },
+                                onEdit: {
+                                    answerBeingEdited = answer
+                                    editDraft = answer.answer
+                                },
+                                onDelete: { answerPendingDelete = answer }
+                            )
                         }
                     }
                 }
@@ -58,48 +87,154 @@ struct PostDetailView: View {
         .warmBackground()
         .navigationTitle(L.community)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    if isMyPost {
+                        Button { showEditPost = true } label: {
+                            Label(L.edit, systemImage: "pencil")
+                        }
+                        Button(role: .destructive) { showDeletePostConfirm = true } label: {
+                            Label(L.delete, systemImage: "trash")
+                        }
+                    } else {
+                        Button(role: .destructive) { showReportConfirm = true } label: {
+                            Label(L.report, systemImage: "flag")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .tint(Warm.brand)
+            }
+        }
         .task { await model.start(postId: postId) }
         .onDisappear { model.stop() }
+
+        // MARK: Post actions
+
+        .confirmationDialog(L.deletePostConfirm, isPresented: $showDeletePostConfirm,
+                            titleVisibility: .visible) {
+            Button(L.delete, role: .destructive) {
+                Task {
+                    if await model.deletePost() { dismiss() }
+                }
+            }
+            Button(L.cancel, role: .cancel) {}
+        }
+        .confirmationDialog(L.reportConfirm, isPresented: $showReportConfirm,
+                            titleVisibility: .visible) {
+            Button(L.report, role: .destructive) {
+                Task {
+                    await model.report()
+                    toast = L.reportSent
+                }
+            }
+            Button(L.cancel, role: .cancel) {}
+        }
+        .sheet(isPresented: $showEditPost) {
+            if let post = model.post {
+                ComposePostView(editing: post) {
+                    Task { await model.reloadPost() }
+                }
+            }
+        }
+
+        // MARK: Answer actions
+
+        .confirmationDialog(L.deleteCommentConfirm, isPresented: .constant(answerPendingDelete != nil),
+                            titleVisibility: .visible) {
+            Button(L.delete, role: .destructive) {
+                if let answer = answerPendingDelete {
+                    Task { await model.deleteAnswer(answer) }
+                }
+                answerPendingDelete = nil
+            }
+            Button(L.cancel, role: .cancel) { answerPendingDelete = nil }
+        }
+        .alert(L.editComment, isPresented: .constant(answerBeingEdited != nil)) {
+            TextField(L.commentHint, text: $editDraft)
+            Button(L.save) {
+                if let answer = answerBeingEdited {
+                    Task { await model.updateAnswer(answer, text: editDraft) }
+                }
+                answerBeingEdited = nil
+            }
+            Button(L.cancel, role: .cancel) { answerBeingEdited = nil }
+        }
+        .overlay(alignment: .top) {
+            if let toast {
+                Text(toast)
+                    .font(WarmFont.caption)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Capsule().fill(Warm.brand))
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                        withAnimation { self.toast = nil }
+                    }
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: toast)
     }
 
     // MARK: - Composer
 
     private var composer: some View {
-        HStack(spacing: 8) {
-            TextField(L.commentHint, text: $draft, axis: .vertical)
-                .font(WarmFont.body)
-                .lineLimit(1...4)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: WarmMetrics.chipRadius, style: .continuous)
-                        .fill(Warm.chipOff)
+        VStack(spacing: 6) {
+            // Reply context, so it's obvious the next message is a reply and
+            // not a new top-level comment.
+            if let replyTarget {
+                HStack(spacing: 6) {
+                    Text(L.replyingTo(replyTarget.personName ?? L.anonymous))
+                        .font(WarmFont.caption)
+                        .foregroundStyle(Warm.mutedSub)
+                    Spacer()
+                    Button {
+                        self.replyTarget = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(Warm.muted)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 4)
+            }
+
+            HStack(spacing: 8) {
+                WarmTextField(
+                    placeholder: replyTarget == nil ? L.commentHint : L.replyHint,
+                    text: $draft,
+                    axis: .vertical,
+                    lineLimit: 1...4
                 )
 
-            Button {
-                Task { await send() }
-            } label: {
-                ZStack {
-                    if isSending {
-                        ProgressView().tint(.white)
-                    } else {
-                        // An explicit arrow, not chevron - SF arrows mirror in
-                        // RTL, which is what we want for a directional "send".
-                        Image(systemName: "arrow.up")
-                            .font(.system(size: 15, weight: .semibold))
+                Button {
+                    Task { await send() }
+                } label: {
+                    ZStack {
+                        if isSending {
+                            ProgressView().tint(.white)
+                        } else {
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 15, weight: .semibold))
+                        }
                     }
-                }
-                .foregroundStyle(.white)
-                .frame(width: 42, height: 42)
-                .background(
-                    Circle().fill(
-                        canSend ? AnyShapeStyle(Warm.brandGradient)
-                                : AnyShapeStyle(Warm.muted.opacity(0.4))
+                    .foregroundStyle(.white)
+                    .frame(width: 42, height: 42)
+                    .background(
+                        Circle().fill(
+                            canSend ? AnyShapeStyle(Warm.brandGradient)
+                                    : AnyShapeStyle(Warm.brandBright.opacity(0.28))
+                        )
                     )
-                )
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSend)
             }
-            .buttonStyle(.plain)
-            .disabled(!canSend)
         }
         .padding(.horizontal, WarmMetrics.screenPadding)
         .padding(.vertical, 10)
@@ -117,11 +252,21 @@ struct PostDetailView: View {
         isSending = true
         defer { isSending = false }
 
-        await model.addAnswer(
-            text: text,
-            personName: auth.profile?.name,
-            personImage: auth.profile?.image_url
-        )
+        if let target = replyTarget {
+            await model.addReply(
+                to: target,
+                text: text,
+                personName: auth.profile?.name,
+                personImage: auth.profile?.image_url
+            )
+            replyTarget = nil
+        } else {
+            await model.addAnswer(
+                text: text,
+                personName: auth.profile?.name,
+                personImage: auth.profile?.image_url
+            )
+        }
         draft = ""
     }
 }
@@ -130,13 +275,36 @@ struct PostDetailView: View {
 
 private struct AnswerRow: View {
     let answer: ForumAnswer
+    let isMine: Bool
+    let onReply: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
         WarmCard {
             VStack(alignment: .leading, spacing: 6) {
-                Text(answer.personName ?? L.anonymous)
-                    .font(WarmFont.heading)
-                    .foregroundStyle(Warm.ink)
+                HStack {
+                    Text(answer.personName ?? L.anonymous)
+                        .font(WarmFont.heading)
+                        .foregroundStyle(Warm.ink)
+
+                    Spacer()
+
+                    if isMine {
+                        Menu {
+                            Button { onEdit() } label: {
+                                Label(L.edit, systemImage: "pencil")
+                            }
+                            Button(role: .destructive) { onDelete() } label: {
+                                Label(L.delete, systemImage: "trash")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .foregroundStyle(Warm.muted)
+                                .frame(width: 32, height: 28)
+                        }
+                    }
+                }
 
                 Text(answer.answer)
                     .font(WarmFont.body)
@@ -157,6 +325,7 @@ private struct AnswerRow: View {
                                 Text(reply.answer)
                                     .font(WarmFont.caption)
                                     .foregroundStyle(Warm.bodyInk)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(8)
@@ -168,6 +337,14 @@ private struct AnswerRow: View {
                     }
                     .padding(.top, 4)
                 }
+
+                Button(action: onReply) {
+                    Label(L.reply, systemImage: "arrowshape.turn.up.left")
+                        .font(WarmFont.caption)
+                        .foregroundStyle(Warm.brand)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
             }
         }
     }
@@ -197,13 +374,18 @@ final class PostDetailModel: ObservableObject {
             Task { @MainActor in self?.answers = answers }
         }
 
+        await reloadPost()
+        try? await store.incrementViews(postId: postId)
+        isLoading = false
+    }
+
+    func reloadPost() async {
+        guard let postId else { return }
         do {
             post = try await store.post(id: postId)
-            try? await store.incrementViews(postId: postId)
         } catch {
             errorMessage = L.somethingWentWrong
         }
-        isLoading = false
     }
 
     func stop() {
@@ -211,18 +393,84 @@ final class PostDetailModel: ObservableObject {
         listener = nil
     }
 
+    // MARK: Answers
+
     func addAnswer(text: String, personName: String?, personImage: String?) async {
         guard let postId else { return }
         do {
             try await store.addAnswer(
-                postId: postId,
-                text: text,
-                personName: personName,
-                personImage: personImage
+                postId: postId, text: text,
+                personName: personName, personImage: personImage
             )
         } catch {
             errorMessage = L.somethingWentWrong
         }
+    }
+
+    func addReply(
+        to answer: ForumAnswer,
+        text: String,
+        personName: String?,
+        personImage: String?
+    ) async {
+        guard let postId, let answerId = answer.id, let uid = store.currentUid else { return }
+
+        let reply = ForumAnswer(
+            uid: uid,
+            answer: text,
+            personImage: personImage,
+            personName: personName,
+            timestamp: Timestamp(date: Date()),
+            parentAnswerId: answerId,
+            // Recorded so the reply can say who it addresses, matching the
+            // schema pt-ios writes.
+            replyToName: answer.personName
+        )
+
+        do {
+            try await store.addReply(postId: postId, answerId: answerId, reply: reply)
+        } catch {
+            errorMessage = L.somethingWentWrong
+        }
+    }
+
+    func updateAnswer(_ answer: ForumAnswer, text: String) async {
+        guard let postId, let answerId = answer.id else { return }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        do {
+            try await store.updateAnswer(postId: postId, answerId: answerId, text: trimmed)
+        } catch {
+            errorMessage = L.somethingWentWrong
+        }
+    }
+
+    func deleteAnswer(_ answer: ForumAnswer) async {
+        guard let postId, let answerId = answer.id else { return }
+        do {
+            try await store.deleteAnswer(postId: postId, answerId: answerId)
+        } catch {
+            errorMessage = L.somethingWentWrong
+        }
+    }
+
+    // MARK: Post
+
+    /// Returns whether the delete succeeded, so the caller can pop the screen.
+    func deletePost() async -> Bool {
+        guard let postId else { return false }
+        do {
+            try await store.deletePost(postId: postId)
+            return true
+        } catch {
+            errorMessage = L.somethingWentWrong
+            return false
+        }
+    }
+
+    func report() async {
+        guard let postId else { return }
+        try? await store.reportPost(postId: postId)
     }
 
     func toggleLike(uid: String?) async {
@@ -239,7 +487,6 @@ final class PostDetailModel: ObservableObject {
         do {
             try await store.setLike(postId: postId, liked: !wasLiked)
         } catch {
-            // Roll back the optimistic change.
             if wasLiked { current.array.append(uid) } else { current.array.removeAll { $0 == uid } }
             post = current
             errorMessage = L.somethingWentWrong

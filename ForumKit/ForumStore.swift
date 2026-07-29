@@ -21,6 +21,8 @@ import FirebaseAuth
 public enum ForumError: Error {
     case notSignedIn
     case postNotFound
+    /// Attempted to edit or delete content belonging to someone else.
+    case notAuthor
     /// Firebase was never configured - see ForumKit.isConfigured.
     case notConfigured
 }
@@ -243,6 +245,88 @@ public final class ForumStore {
         try await postsRef.document(postId)
             .collection(ForumKit.Collection.answers).document(answerId)
             .updateData([ForumKit.Field.answers: FieldValue.arrayUnion([encoded])])
+    }
+
+    // MARK: - Editing and moderation
+
+    /// Edits a post's text. `keywords` MUST be recomputed - leaving the old
+    /// tokens behind makes the post findable by words it no longer contains and
+    /// invisible under its new ones, on all three apps.
+    public func updatePost(postId: String, text: String, imageUrl: String?) async throws {
+        try requireConfigured()
+        guard let uid = currentUid else { throw ForumError.notSignedIn }
+
+        let post = try await post(id: postId)
+        guard post.uid == uid else { throw ForumError.notAuthor }
+
+        var data: [String: Any] = [
+            "description": text,
+            ForumKit.Field.keywords: KeywordHelper.forDocument(text),
+        ]
+        // Only touch the image when one is supplied; passing nil must not wipe
+        // an existing attachment the user didn't intend to remove.
+        if let imageUrl { data["imageUrl"] = imageUrl }
+
+        try await postsRef.document(postId).updateData(data)
+    }
+
+    /// Deletes a post. Answers live in a subcollection and are NOT removed by
+    /// this - Firestore doesn't cascade. They become orphaned, which matches
+    /// what the Android app does today.
+    public func deletePost(postId: String) async throws {
+        try requireConfigured()
+        guard let uid = currentUid else { throw ForumError.notSignedIn }
+
+        let post = try await post(id: postId)
+        guard post.uid == uid else { throw ForumError.notAuthor }
+
+        try await postsRef.document(postId).delete()
+    }
+
+    /// Reports a post for moderation.
+    ///
+    /// Schema quirk inherited from Android: the document id is the POST id, and
+    /// the post id is also written into the `uid` field. That means a second
+    /// reporter overwrites the first - one report doc per post. Kept as-is so
+    /// whatever reads these keeps working; `reportedBy` is added alongside so a
+    /// moderator can at least see who raised it.
+    public func reportPost(postId: String) async throws {
+        try requireConfigured()
+        guard let uid = currentUid else { throw ForumError.notSignedIn }
+
+        try await db.collection(ForumKit.Collection.reports).document(postId).setData([
+            "answer": "REPORT",
+            "uid": postId,
+            "image": "",
+            "personName": "",
+            "personImage": "",
+            "timestamp": Timestamp(date: Date()),
+            "source": ForumKit.postSource,
+            "reportedBy": uid,
+        ])
+    }
+
+    /// Edits an answer's text. Matches Android, which updates only `answer`.
+    public func updateAnswer(postId: String, answerId: String, text: String) async throws {
+        try requireConfigured()
+        guard currentUid != nil else { throw ForumError.notSignedIn }
+
+        try await postsRef.document(postId)
+            .collection(ForumKit.Collection.answers).document(answerId)
+            .updateData(["answer": text])
+    }
+
+    /// Deletes an answer and decrements the post's denormalised count.
+    public func deleteAnswer(postId: String, answerId: String) async throws {
+        try requireConfigured()
+        guard currentUid != nil else { throw ForumError.notSignedIn }
+
+        try await postsRef.document(postId)
+            .collection(ForumKit.Collection.answers).document(answerId).delete()
+
+        try await postsRef.document(postId).updateData([
+            ForumKit.Field.answers: FieldValue.increment(Int64(-1))
+        ])
     }
 
     // MARK: - Reactions

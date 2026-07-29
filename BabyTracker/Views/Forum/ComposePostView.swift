@@ -16,14 +16,21 @@ import PhotosUI
 import FirebaseStorage
 
 struct ComposePostView: View {
-    /// Called after a successful post so the feed can refresh.
+    /// When set, this edits an existing post instead of creating one.
+    /// Explicitly defaulted so the create-mode call sites keep compiling with
+    /// just a trailing closure.
+    var editing: ForumPost? = nil
+    /// Called after a successful post or edit so the caller can refresh.
     var onPosted: () -> Void
+
+    private var isEditing: Bool { editing != nil }
 
     @EnvironmentObject private var auth: ForumAuth
     @Environment(\.dismiss) private var dismiss
 
     @State private var text = ""
     @State private var isAnonymous = false
+    @State private var didLoadExisting = false
     @State private var pickerItem: PhotosPickerItem?
     @State private var imageData: Data?
     @State private var isPosting = false
@@ -50,7 +57,7 @@ struct ComposePostView: View {
                 .padding(WarmMetrics.screenPadding)
             }
             .warmBackground()
-            .navigationTitle(L.newPost)
+            .navigationTitle(isEditing ? L.editPost : L.newPost)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -58,10 +65,16 @@ struct ComposePostView: View {
                         .tint(Warm.mutedSub)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(L.newPost) { Task { await post() } }
+                    Button(isEditing ? L.save : L.newPost) { Task { await post() } }
                         .tint(Warm.brand)
                         .disabled(!canPost)
                 }
+            }
+            .task {
+                guard let editing, !didLoadExisting else { return }
+                didLoadExisting = true
+                text = editing.description
+                isAnonymous = editing.isAnonymous
             }
             .overlay {
                 if isPosting {
@@ -77,11 +90,12 @@ struct ComposePostView: View {
     // MARK: - Pieces
 
     private var editor: some View {
-        WarmCard {
-            TextField(L.writeSomething, text: $text, axis: .vertical)
-                .font(WarmFont.body)
-                .lineLimit(6...14)
-        }
+        WarmTextField(
+            placeholder: L.writeSomething,
+            text: $text,
+            axis: .vertical,
+            lineLimit: 6...14
+        )
     }
 
     private var attachment: some View {
@@ -155,17 +169,27 @@ struct ComposePostView: View {
                 imageUrl = try await upload(imageData)
             }
 
-            // Anonymous posts must carry the anonymous label as personName -
-            // that exact string is what the Cloud Function checks to suppress
-            // follower pushes, and what the other apps render.
-            try await ForumStore.shared.createPost(
-                text: trimmed,
-                imageUrl: imageUrl,
-                personName: isAnonymous ? L.anonymous : auth.profile?.name,
-                personImage: isAnonymous ? nil : auth.profile?.image_url,
-                autoApprove: await autoApprovePosts(),
-                mentions: nil
-            )
+            if let editing, let docId = editing.docId {
+                // Editing rewrites `keywords` inside the store - stale tokens
+                // would leave the post findable by words it no longer contains.
+                try await ForumStore.shared.updatePost(
+                    postId: docId,
+                    text: trimmed,
+                    imageUrl: imageUrl
+                )
+            } else {
+                // Anonymous posts must carry the anonymous label as personName -
+                // that exact string is what the Cloud Function checks to suppress
+                // follower pushes, and what the other apps render.
+                try await ForumStore.shared.createPost(
+                    text: trimmed,
+                    imageUrl: imageUrl,
+                    personName: isAnonymous ? L.anonymous : auth.profile?.name,
+                    personImage: isAnonymous ? nil : auth.profile?.image_url,
+                    autoApprove: await autoApprovePosts(),
+                    mentions: nil
+                )
+            }
 
             onPosted()
             dismiss()

@@ -100,6 +100,57 @@ struct TierProgressBar: View {
     }
 }
 
+// MARK: - Text field
+
+/// Input field with a readable placeholder.
+///
+/// SwiftUI gives no way to colour a `TextField`'s built-in placeholder, and the
+/// default grey against the cream `chipOff` fill was too faint to read - the
+/// first thing testers flagged. This draws the placeholder itself, on a white
+/// fill with a visible border so the tap target is obvious.
+struct WarmTextField: View {
+    let placeholder: String
+    @Binding var text: String
+    var axis: Axis = .horizontal
+    var lineLimit: ClosedRange<Int> = 1...1
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if text.isEmpty {
+                Text(placeholder)
+                    .font(WarmFont.body)
+                    .foregroundStyle(Warm.mutedSub)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .allowsHitTesting(false)
+            }
+
+            if axis == .vertical {
+                TextField("", text: $text, axis: .vertical)
+                    .lineLimit(lineLimit)
+                    .font(WarmFont.body)
+                    .foregroundStyle(Warm.ink)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+            } else {
+                TextField("", text: $text)
+                    .font(WarmFont.body)
+                    .foregroundStyle(Warm.ink)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: WarmMetrics.chipRadius, style: .continuous)
+                .fill(Warm.card)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: WarmMetrics.chipRadius, style: .continuous)
+                .stroke(Warm.dotIdle, lineWidth: 1)
+        )
+    }
+}
+
 // MARK: - Screen background
 
 /// The app-wide gradient backdrop.

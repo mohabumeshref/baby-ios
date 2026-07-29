@@ -179,4 +179,37 @@ enum L {
     }
     static var retry: String { localized(ar: "إعادة المحاولة", en: "Retry") }
     static var cancel: String { localized(ar: "إلغاء", en: "Cancel") }
+
+    // MARK: - Post / comment actions
+    // Arabic wording matches the Android app's strings.xml.
+
+    static var edit: String { localized(ar: "تعديل", en: "Edit") }
+    static var delete: String { localized(ar: "حذف", en: "Delete") }
+    static var save: String { localized(ar: "حفظ", en: "Save") }
+    static var report: String { localized(ar: "إبلاغ", en: "Report") }
+    static var reply: String { localized(ar: "رد", en: "Reply") }
+    static var replyHint: String { localized(ar: "اكتبي ردك...", en: "Write your reply...") }
+    static var more: String { localized(ar: "المزيد", en: "More") }
+
+    static var deletePostConfirm: String {
+        localized(ar: "سيتم حذف المنشور، هل أنت متأكد؟", en: "This post will be deleted. Are you sure?")
+    }
+    static var deleteCommentConfirm: String {
+        localized(ar: "سيتم حذف التعليق، هل أنت متأكد؟", en: "This comment will be deleted. Are you sure?")
+    }
+    static var deletedSuccessfully: String {
+        localized(ar: "تم الحذف بنجاح", en: "Deleted successfully")
+    }
+    static var reportConfirm: String {
+        localized(ar: "سيتم الإبلاغ عن هذا المنشور", en: "This post will be reported")
+    }
+    static var reportSent: String {
+        localized(ar: "تم الإبلاغ، شكراً لك", en: "Reported — thank you")
+    }
+    static var editPost: String { localized(ar: "تعديل المنشور", en: "Edit post") }
+    static var editComment: String { localized(ar: "تعديل التعليق", en: "Edit comment") }
+    /// Shown under a reply to say who it addresses.
+    static func replyingTo(_ name: String) -> String {
+        localized(ar: "رداً على \(name)", en: "Replying to \(name)")
+    }
 }

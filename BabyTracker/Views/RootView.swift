@@ -10,11 +10,25 @@ import SwiftUI
 struct RootView: View {
     @EnvironmentObject private var profile: BabyProfile
 
+    /// Skipped entirely for screenshot runs - a 1.4s splash in every capture
+    /// would just waste the job's time.
+    @State private var showSplash = ScreenshotSeed.tab == nil
+
     var body: some View {
-        if profile.isOnboarded {
-            MainTabView()
-        } else {
-            BirthDateOnboardingView()
+        ZStack {
+            if profile.isOnboarded {
+                MainTabView()
+            } else {
+                BirthDateOnboardingView()
+            }
+
+            if showSplash {
+                SplashView {
+                    withAnimation(.easeOut(duration: 0.35)) { showSplash = false }
+                }
+                .transition(.opacity)
+                .zIndex(1)
+            }
         }
     }
 }
