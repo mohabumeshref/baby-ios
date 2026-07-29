@@ -24,6 +24,7 @@ struct MentionInputField: View {
     /// People already in this thread - suggested first, and free to compute.
     var participants: [MentionCandidate] = []
     var lineLimit: ClosedRange<Int> = 1...4
+    var focus: FocusState<Bool>.Binding? = nil
 
     @EnvironmentObject private var auth: ForumAuth
 
@@ -42,7 +43,8 @@ struct MentionInputField: View {
                 placeholder: placeholder,
                 text: $text,
                 axis: .vertical,
-                lineLimit: lineLimit
+                lineLimit: lineLimit,
+                focus: focus
             )
             .onChange(of: text) { _ in refreshSuggestions() }
         }

@@ -25,6 +25,7 @@ struct PostDetailView: View {
     @State private var isSending = false
     @State private var commentPickerItem: PhotosPickerItem?
     @State private var commentImageData: Data?
+    @FocusState private var composerFocused: Bool
 
     /// Non-nil while composing a reply to a specific answer.
     @State private var replyTarget: ForumAnswer?
@@ -72,7 +73,10 @@ struct PostDetailView: View {
                             AnswerRow(
                                 answer: answer,
                                 isMine: answer.uid == auth.uid,
-                                onReply: { replyTarget = answer },
+                                onReply: {
+                                    replyTarget = answer
+                                    composerFocused = true
+                                },
                                 onEdit: {
                                     answerBeingEdited = answer
                                     editDraft = answer.answer
@@ -241,7 +245,8 @@ struct PostDetailView: View {
                     placeholder: replyTarget == nil ? L.commentHint : L.replyHint,
                     text: $draft,
                     mentions: $draftMentions,
-                    participants: model.participants
+                    participants: model.participants,
+                    focus: $composerFocused
                 )
 
                 Button {
@@ -314,6 +319,9 @@ struct PostDetailView: View {
         draftMentions = []
         commentImageData = nil
         commentPickerItem = nil
+        // Drop the keyboard so the comment that was just posted is visible
+        // rather than hidden behind it.
+        composerFocused = false
     }
 }
 

@@ -113,6 +113,9 @@ struct WarmTextField: View {
     @Binding var text: String
     var axis: Axis = .horizontal
     var lineLimit: ClosedRange<Int> = 1...1
+    /// Optional so existing call sites are unaffected. Supplied when the owner
+    /// needs to dismiss the keyboard - e.g. after a comment is sent.
+    var focus: FocusState<Bool>.Binding? = nil
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -125,20 +128,7 @@ struct WarmTextField: View {
                     .allowsHitTesting(false)
             }
 
-            if axis == .vertical {
-                TextField("", text: $text, axis: .vertical)
-                    .lineLimit(lineLimit)
-                    .font(WarmFont.body)
-                    .foregroundStyle(Warm.ink)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-            } else {
-                TextField("", text: $text)
-                    .font(WarmFont.body)
-                    .foregroundStyle(Warm.ink)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-            }
+            field
         }
         .background(
             RoundedRectangle(cornerRadius: WarmMetrics.chipRadius, style: .continuous)
@@ -148,6 +138,35 @@ struct WarmTextField: View {
             RoundedRectangle(cornerRadius: WarmMetrics.chipRadius, style: .continuous)
                 .stroke(Warm.dotIdle, lineWidth: 1)
         )
+    }
+
+    /// `.focused()` needs a non-optional binding, so the two cases are built
+    /// separately rather than conditionally applying the modifier.
+    @ViewBuilder
+    private var field: some View {
+        if let focus {
+            base.focused(focus)
+        } else {
+            base
+        }
+    }
+
+    @ViewBuilder
+    private var base: some View {
+        if axis == .vertical {
+            TextField("", text: $text, axis: .vertical)
+                .lineLimit(lineLimit)
+                .font(WarmFont.body)
+                .foregroundStyle(Warm.ink)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+        } else {
+            TextField("", text: $text)
+                .font(WarmFont.body)
+                .foregroundStyle(Warm.ink)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+        }
     }
 }
 
