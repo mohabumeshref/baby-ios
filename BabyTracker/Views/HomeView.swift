@@ -78,50 +78,26 @@ struct HomeView: View {
                         .foregroundStyle(Warm.eyebrow)
                 }
 
-                HStack(spacing: 12) {
-                    stat(value: age.days, heading: L.inDays, unit: L.dayUnit)
-                    divider
-                    stat(value: age.weeks, heading: L.inWeeks, unit: L.weekUnit)
-                    divider
-                    monthBadge(age.milestoneMonth)
+                HStack(spacing: 10) {
+                    statBox(heading: L.inDays, value: age.days, unit: L.dayUnit)
+                    statBox(heading: L.inWeeks, value: age.weeks, unit: L.weekUnit)
+                    statBox(heading: L.inMonths, value: age.milestoneMonth + 1, unit: L.monthUnit)
                 }
             }
         }
     }
 
-    /// Heading above, unit below: "بالأيام / 90 / يوم". The heading names what
-    /// the column measures before the figure arrives; the unit under the number
-    /// reads as part of the value itself.
-    private func stat(value: Int, heading: String, unit: String) -> some View {
+    /// All three cells share the month badge's orange box, per design
+    /// feedback - one visual weight for the whole age row.
+    private func statBox(heading: String, value: Int, unit: String) -> some View {
         VStack(spacing: 2) {
             Text(heading)
                 .font(WarmFont.caption)
-                .foregroundStyle(Warm.muted)
+                .foregroundStyle(Warm.monthLabel)
             Text(String.number(value))
                 .font(WarmFont.title)
-                .foregroundStyle(Warm.brand)
-            Text(unit)
-                .font(WarmFont.caption)
-                .foregroundStyle(Warm.muted)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private var divider: some View {
-        Rectangle()
-            .fill(Warm.chipOff)
-            .frame(width: 1, height: 32)
-    }
-
-    private func monthBadge(_ month: Int) -> some View {
-        VStack(spacing: 2) {
-            Text(L.inMonths)
-                .font(WarmFont.caption)
-                .foregroundStyle(Warm.monthLabel)
-            Text(String.number(month + 1))
-                .font(WarmFont.title)
                 .foregroundStyle(.white)
-            Text(L.monthUnit)
+            Text(unit)
                 .font(WarmFont.caption)
                 .foregroundStyle(Warm.monthLabel)
         }

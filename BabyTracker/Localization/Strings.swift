@@ -30,7 +30,7 @@ enum L {
 
     // MARK: - App
 
-    static var appName: String { localized(ar: "أنا و طفلي", en: "Me & My Baby") }
+    static var appName: String { localized(ar: "أنا و طفلي", en: "My Baby & I") }
 
     // MARK: - Tabs (Android: preg_tab / weeks_tab / forum_tab)
 
@@ -107,7 +107,7 @@ enum L {
     // it matches CFBundleDisplayName and the App Store listing.
 
     static var weeklyReminderTitle: String {
-        localized(ar: "أنا و طفلي - أسبوع جديد", en: "Me & My Baby - a new week")
+        localized(ar: "أنا و طفلي - أسبوع جديد", en: "My Baby & I - a new week")
     }
     static var weeklyReminderBody: String {
         localized(

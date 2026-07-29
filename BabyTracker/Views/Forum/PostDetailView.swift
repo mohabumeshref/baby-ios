@@ -32,12 +32,10 @@ struct PostDetailView: View {
     @State private var replyTarget: ForumAnswer?
 
     // Post actions
-    @State private var showDeletePostConfirm = false
     @State private var showReportConfirm = false
     @State private var showEditPost = false
 
     // Answer actions
-    @State private var answerPendingDelete: ForumAnswer?
     @State private var answerBeingEdited: ForumAnswer?
     @State private var editDraft = ""
 
@@ -82,7 +80,7 @@ struct PostDetailView: View {
                                     answerBeingEdited = answer
                                     editDraft = answer.answer
                                 },
-                                onDelete: { answerPendingDelete = answer }
+                                onDelete: { Task { await model.deleteAnswer(answer) } }
                             )
                         }
                     }
@@ -109,7 +107,11 @@ struct PostDetailView: View {
                         Button { showEditPost = true } label: {
                             Label(L.edit, systemImage: "pencil")
                         }
-                        Button(role: .destructive) { showDeletePostConfirm = true } label: {
+                        Button(role: .destructive) {
+                            // No confirmation, per feedback - delete is the
+                            // author's own post and the action is immediate.
+                            Task { if await model.deletePost() { dismiss() } }
+                        } label: {
                             Label(L.delete, systemImage: "trash")
                         }
                     } else {
@@ -128,15 +130,6 @@ struct PostDetailView: View {
 
         // MARK: Post actions
 
-        .confirmationDialog(L.deletePostConfirm, isPresented: $showDeletePostConfirm,
-                            titleVisibility: .visible) {
-            Button(L.delete, role: .destructive) {
-                Task {
-                    if await model.deletePost() { dismiss() }
-                }
-            }
-            Button(L.cancel, role: .cancel) {}
-        }
         .confirmationDialog(L.reportConfirm, isPresented: $showReportConfirm,
                             titleVisibility: .visible) {
             Button(L.report, role: .destructive) {
@@ -157,17 +150,10 @@ struct PostDetailView: View {
 
         // MARK: Answer actions
 
-        .confirmationDialog(L.deleteCommentConfirm, isPresented: .constant(answerPendingDelete != nil),
-                            titleVisibility: .visible) {
-            Button(L.delete, role: .destructive) {
-                if let answer = answerPendingDelete {
-                    Task { await model.deleteAnswer(answer) }
-                }
-                answerPendingDelete = nil
-            }
-            Button(L.cancel, role: .cancel) { answerPendingDelete = nil }
-        }
-        .alert(L.editComment, isPresented: .constant(answerBeingEdited != nil)) {
+        .alert(L.editComment, isPresented: Binding(
+            get: { answerBeingEdited != nil },
+            set: { if !$0 { answerBeingEdited = nil } }
+        )) {
             TextField(L.commentHint, text: $editDraft)
             Button(L.save) {
                 if let answer = answerBeingEdited {

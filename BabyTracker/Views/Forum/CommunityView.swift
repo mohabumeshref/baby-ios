@@ -20,7 +20,6 @@ struct CommunityView: View {
 
     @State private var showingCompose = false
     @State private var editingPost: ForumPost?
-    @State private var postPendingDelete: ForumPost?
     @State private var postPendingReport: ForumPost?
     @State private var fullScreenImage: String?
 
@@ -51,9 +50,7 @@ struct CommunityView: View {
             onPosted: { Task { await model.loadFirstPage() } }
         ))
         .modifier(CommunityDialogs(
-            postPendingDelete: $postPendingDelete,
             postPendingReport: $postPendingReport,
-            onDelete: { post in Task { await model.delete(post) } },
             onReport: { post in Task { await model.report(post) } }
         ))
         .task {
@@ -191,7 +188,7 @@ struct CommunityView: View {
                 },
                 onTapImage: { fullScreenImage = $0 },
                 onEdit: isMine ? { editingPost = post } : nil,
-                onDelete: isMine ? { postPendingDelete = post } : nil,
+                onDelete: isMine ? { Task { await model.delete(post) } } : nil,
                 onReport: isMine ? nil : { postPendingReport = post }
             )
         }
@@ -238,27 +235,19 @@ private struct CommunitySheets: ViewModifier {
 }
 
 private struct CommunityDialogs: ViewModifier {
-    @Binding var postPendingDelete: ForumPost?
     @Binding var postPendingReport: ForumPost?
-    let onDelete: (ForumPost) -> Void
     let onReport: (ForumPost) -> Void
 
     func body(content: Content) -> some View {
         content
             .confirmationDialog(
-                L.deletePostConfirm,
-                isPresented: .constant(postPendingDelete != nil),
-                titleVisibility: .visible
-            ) {
-                Button(L.delete, role: .destructive) {
-                    if let post = postPendingDelete { onDelete(post) }
-                    postPendingDelete = nil
-                }
-                Button(L.cancel, role: .cancel) { postPendingDelete = nil }
-            }
-            .confirmationDialog(
                 L.reportConfirm,
-                isPresented: .constant(postPendingReport != nil),
+                // A real binding, not .constant() - the constant form is what
+                // made these dialogs render in the wrong place on device.
+                isPresented: Binding(
+                    get: { postPendingReport != nil },
+                    set: { if !$0 { postPendingReport = nil } }
+                ),
                 titleVisibility: .visible
             ) {
                 Button(L.report, role: .destructive) {
