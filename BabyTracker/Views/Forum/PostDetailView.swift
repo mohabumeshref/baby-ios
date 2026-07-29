@@ -413,22 +413,18 @@ final class PostDetailModel: ObservableObject {
         personName: String?,
         personImage: String?
     ) async {
-        guard let postId, let answerId = answer.id, let uid = store.currentUid else { return }
-
-        let reply = ForumAnswer(
-            uid: uid,
-            answer: text,
-            personImage: personImage,
-            personName: personName,
-            timestamp: Timestamp(date: Date()),
-            parentAnswerId: answerId,
-            // Recorded so the reply can say who it addresses, matching the
-            // schema pt-ios writes.
-            replyToName: answer.personName
-        )
-
+        guard let postId, let answerId = answer.id else { return }
         do {
-            try await store.addReply(postId: postId, answerId: answerId, reply: reply)
+            try await store.addReply(
+                postId: postId,
+                answerId: answerId,
+                text: text,
+                personName: personName,
+                personImage: personImage,
+                // Recorded so the reply can say who it addresses, matching
+                // what pt-ios writes.
+                replyToName: answer.personName
+            )
         } catch {
             errorMessage = L.somethingWentWrong
         }
@@ -448,7 +444,13 @@ final class PostDetailModel: ObservableObject {
     func deleteAnswer(_ answer: ForumAnswer) async {
         guard let postId, let answerId = answer.id else { return }
         do {
-            try await store.deleteAnswer(postId: postId, answerId: answerId)
+            // Replies each incremented the post's total when written, so they
+            // have to come off with their parent.
+            try await store.deleteAnswer(
+                postId: postId,
+                answerId: answerId,
+                replyCount: answer.answers?.count ?? 0
+            )
         } catch {
             errorMessage = L.somethingWentWrong
         }

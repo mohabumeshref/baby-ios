@@ -233,18 +233,59 @@ public final class ForumStore {
     /// Appends a reply into an answer's own `answers` array. This shape is what
     /// the `onReplyAdded` Cloud Function watches - it compares the array length
     /// before and after the update - so replies must NOT become documents.
+    ///
+    /// The dictionary is written key-by-key rather than encoded from
+    /// `ForumAnswer`, because the stored shape carries two fields the model
+    /// does not: a generated `id`, and `type: 2` which is how pt-ios
+    /// distinguishes a reply from a top-level comment when it flattens them
+    /// into rows. Encoding the struct would silently drop both and pt-ios would
+    /// render our replies wrongly.
+    @discardableResult
     public func addReply(
         postId: String,
         answerId: String,
-        reply: ForumAnswer
-    ) async throws {
+        text: String,
+        personName: String?,
+        personImage: String?,
+        imageUrl: String? = nil,
+        replyToName: String? = nil,
+        mentions: [Mention]? = nil
+    ) async throws -> String {
         try requireConfigured()
-        guard currentUid != nil else { throw ForumError.notSignedIn }
-        let encoded = try Firestore.Encoder().encode(reply)
+        guard let uid = currentUid else { throw ForumError.notSignedIn }
 
-        try await postsRef.document(postId)
-            .collection(ForumKit.Collection.answers).document(answerId)
-            .updateData([ForumKit.Field.answers: FieldValue.arrayUnion([encoded])])
+        let replyId = UUID().uuidString
+        var reply: [String: Any] = [
+            "id": replyId,
+            "uid": uid,
+            "answer": text,
+            "image": imageUrl ?? "",
+            "personImage": personImage ?? "",
+            "personName": personName ?? "",
+            "timestamp": Timestamp(date: Date()),
+            "parentAnswerId": answerId,
+            "type": 2,
+        ]
+        if let replyToName, !replyToName.isEmpty {
+            reply["replyToName"] = replyToName
+        }
+        if let mentions, !mentions.isEmpty {
+            reply["mentions"] = mentions.map {
+                ["uid": $0.uid, "name": $0.name, "start": $0.start, "length": $0.length] as [String: Any]
+            }
+        }
+
+        let postRef = postsRef.document(postId)
+        try await postRef.collection(ForumKit.Collection.answers).document(answerId)
+            .updateData([ForumKit.Field.answers: FieldValue.arrayUnion([reply])])
+
+        // Replies count toward the post's comment total, same as pt-ios.
+        try await postRef.updateData([
+            ForumKit.Field.answers: FieldValue.increment(Int64(1)),
+            ForumKit.Field.notificationArray: FieldValue.arrayUnion([uid]),
+        ])
+
+        return replyId
     }
 
     // MARK: - Editing and moderation
@@ -316,8 +357,13 @@ public final class ForumStore {
             .updateData(["answer": text])
     }
 
-    /// Deletes an answer and decrements the post's denormalised count.
-    public func deleteAnswer(postId: String, answerId: String) async throws {
+    /// Deletes an answer and corrects the post's denormalised comment count.
+    ///
+    /// The decrement is `1 + replies`, not 1: replies live inside the deleted
+    /// answer's `answers` array and each one incremented the post total when it
+    /// was written, so removing the parent removes them too. pt-ios does the
+    /// same. Decrementing by 1 would leave the count permanently inflated.
+    public func deleteAnswer(postId: String, answerId: String, replyCount: Int = 0) async throws {
         try requireConfigured()
         guard currentUid != nil else { throw ForumError.notSignedIn }
 
@@ -325,7 +371,7 @@ public final class ForumStore {
             .collection(ForumKit.Collection.answers).document(answerId).delete()
 
         try await postsRef.document(postId).updateData([
-            ForumKit.Field.answers: FieldValue.increment(Int64(-1))
+            ForumKit.Field.answers: FieldValue.increment(Int64(-(1 + replyCount)))
         ])
     }
 
