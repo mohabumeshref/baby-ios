@@ -79,9 +79,9 @@ struct HomeView: View {
                 }
 
                 HStack(spacing: 12) {
-                    stat(value: age.days, label: L.dayUnit)
+                    stat(value: age.days, label: L.inDays)
                     divider
-                    stat(value: age.weeks, label: L.weekUnit)
+                    stat(value: age.weeks, label: L.inWeeks)
                     divider
                     monthBadge(age.milestoneMonth)
                 }
@@ -89,14 +89,17 @@ struct HomeView: View {
         }
     }
 
+    /// Unit above the number, not below: you read "بالأيام" and then the
+    /// figure, so the number arrives already labelled. With the unit
+    /// underneath, three bare numbers landed first and had to be re-read.
     private func stat(value: Int, label: String) -> some View {
         VStack(spacing: 2) {
-            Text(String.number(value))
-                .font(WarmFont.title)
-                .foregroundStyle(Warm.brand)
             Text(label)
                 .font(WarmFont.caption)
                 .foregroundStyle(Warm.muted)
+            Text(String.number(value))
+                .font(WarmFont.title)
+                .foregroundStyle(Warm.brand)
         }
         .frame(maxWidth: .infinity)
     }
@@ -109,12 +112,12 @@ struct HomeView: View {
 
     private func monthBadge(_ month: Int) -> some View {
         VStack(spacing: 2) {
+            Text(L.inMonths)
+                .font(WarmFont.caption)
+                .foregroundStyle(Warm.monthLabel)
             Text(String.number(month + 1))
                 .font(WarmFont.title)
                 .foregroundStyle(.white)
-            Text(L.monthUnit)
-                .font(WarmFont.caption)
-                .foregroundStyle(Warm.monthLabel)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)

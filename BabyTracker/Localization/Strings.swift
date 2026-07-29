@@ -65,9 +65,17 @@ enum L {
     /// Header for the stats card, so the three numbers below it read as one
     /// fact in three units rather than three separate statistics.
     static var babyAge: String { localized(ar: "عمر طفلك", en: "Your baby's age") }
+    // Unit labels sit ABOVE each figure, so they read as "in days: 90" rather
+    // than leaving three bare numbers to be re-read.
+    static var inDays: String { localized(ar: "بالأيام", en: "In days") }
+    static var inWeeks: String { localized(ar: "بالأسابيع", en: "In weeks") }
+    static var inMonths: String { localized(ar: "بالأشهر", en: "In months") }
+
+    // Bare units. Note شهر, not الشهر - the definite article reads as "THE
+    // month" next to a number, which is wrong for a unit label.
     static var dayUnit: String { localized(ar: "يوم", en: "days") }
     static var weekUnit: String { localized(ar: "أسبوع", en: "weeks") }
-    static var monthUnit: String { localized(ar: "الشهر", en: "month") }
+    static var monthUnit: String { localized(ar: "شهر", en: "month") }
     static var progress: String { localized(ar: "التقدّم", en: "Progress") }
     /// "3 من 4"
     static func ofTotal(_ done: Int, _ total: Int) -> String {
