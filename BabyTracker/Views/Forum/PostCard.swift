@@ -141,36 +141,46 @@ struct PostCard: View {
 
     // MARK: - Stats
 
-    /// PT's "new design" action pills: icon + count inside a rounded capsule
-    /// (radius ~22 at 44pt height), filled with the soft surface colour.
+    /// PT's action pills, matched to its stylePillButton NUMBERS, not just its
+    /// shape: 24pt heart / 23pt bubble.right, bold 14 count with a 7pt gap,
+    /// min height 44, corner radius 22, soft surface fill.
     private var stats: some View {
         HStack(spacing: 10) {
             Button(action: onLike) {
                 statPill(
                     systemName: isLiked ? "heart.fill" : "heart",
+                    iconSize: 24,
                     value: post.array.count,
                     tint: isLiked ? Warm.brandDeep : Warm.mutedChip
                 )
             }
             .buttonStyle(.plain)
 
-            statPill(systemName: "bubble.left", value: post.answers, tint: Warm.mutedChip)
+            statPill(
+                systemName: "bubble.right",
+                iconSize: 23,
+                value: post.answers,
+                tint: Warm.mutedChip
+            )
 
             Spacer()
         }
     }
 
-    private func statPill(systemName: String, value: Int, tint: Color) -> some View {
+    private func statPill(systemName: String, iconSize: CGFloat, value: Int, tint: Color) -> some View {
         HStack(spacing: 7) {
             Image(systemName: systemName)
-                .font(.system(size: 14))
+                .font(.system(size: iconSize))
             Text(String.number(value))
                 .font(WarmFont.counter)
         }
         .foregroundStyle(tint)
         .padding(.horizontal, 14)
-        .frame(minHeight: 40)
-        .background(Capsule().fill(Warm.chipOff))
+        .frame(minHeight: 44)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Warm.chipOff)
+        )
     }
 
     /// Short Latin relative time, matching Android's Post.getPostDate and
