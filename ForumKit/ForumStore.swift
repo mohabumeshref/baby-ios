@@ -497,6 +497,13 @@ public final class ForumStore {
         }
     }
 
+    /// A single user's profile, for the profile screen.
+    public func user(uid: String) async throws -> ForumUser? {
+        try requireConfigured()
+        let doc = try await db.collection(ForumKit.Collection.users).document(uid).getDocument()
+        return try? doc.data(as: ForumUser.self)
+    }
+
     /// Uploads an image and returns its download URL.
     public func uploadImage(_ data: Data, folder: String) async throws -> String {
         try requireConfigured()

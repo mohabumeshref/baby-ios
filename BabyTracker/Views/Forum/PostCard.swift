@@ -12,6 +12,13 @@ struct PostCard: View {
     let currentUid: String?
     let onLike: () -> Void
     var onTapMention: ((String, String) -> Void)? = nil
+    var onTapAuthor: (() -> Void)? = nil
+    var onTapImage: ((String) -> Void)? = nil
+    /// Shown as a "..." menu when supplied - the feed uses this so a post can
+    /// be edited, deleted or reported without opening it first, as in pt-ios.
+    var onEdit: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
+    var onReport: (() -> Void)? = nil
 
     private var isLiked: Bool {
         guard let currentUid else { return false }
@@ -60,8 +67,35 @@ struct PostCard: View {
                     .padding(.vertical, 4)
                     .background(Capsule().fill(Warm.chipOff))
             }
+
+            if hasMenu {
+                Menu {
+                    if let onEdit {
+                        Button { onEdit() } label: { Label(L.edit, systemImage: "pencil") }
+                    }
+                    if let onDelete {
+                        Button(role: .destructive) { onDelete() } label: {
+                            Label(L.delete, systemImage: "trash")
+                        }
+                    }
+                    if let onReport {
+                        Button(role: .destructive) { onReport() } label: {
+                            Label(L.report, systemImage: "flag")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .foregroundStyle(Warm.muted)
+                        .frame(width: 30, height: 28)
+                }
+            }
         }
+        // Anonymous authors have no profile to open.
+        .contentShape(Rectangle())
+        .onTapGesture { if !post.isAnonymous { onTapAuthor?() } }
     }
+
+    private var hasMenu: Bool { onEdit != nil || onDelete != nil || onReport != nil }
 
     private var avatar: some View {
         Group {
@@ -113,6 +147,7 @@ struct PostCard: View {
         .frame(maxWidth: .infinity)
         .frame(height: 180)
         .clipShape(RoundedRectangle(cornerRadius: WarmMetrics.chipRadius, style: .continuous))
+        .onTapGesture { onTapImage?(urlString) }
     }
 
     // MARK: - Stats

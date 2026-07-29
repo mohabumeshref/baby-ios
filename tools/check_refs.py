@@ -59,10 +59,11 @@ def main():
                       r"public static let (\w+)")
     report("ForumAuth", set(re.findall(r"\bauth\.(\w+)", combined)) - auth)
 
-    # `model` is bound to ForumFeedModel in the feed and PostDetailModel in the
-    # detail screen, so the union is the correct surface to check against.
-    model = (members_of(src["ForumFeedModel.swift"], r"(?:func|var|let) (\w+)")
-             | members_of(src["PostDetailView.swift"], r"(?:func|var|let) (\w+)"))
+    # `model` is bound to a different type on each screen (feed, post detail,
+    # profile), so the union of their members is the surface to check against.
+    model = set()
+    for f in ("ForumFeedModel.swift", "PostDetailView.swift", "ProfileView.swift"):
+        model |= members_of(src[f], r"(?:func|var|let) (\w+)")
     report("model.*", set(re.findall(r"\bmodel\.(\w+)", combined)) - model)
 
     # Design tokens

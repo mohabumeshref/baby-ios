@@ -208,6 +208,14 @@ enum L {
     }
     static var editPost: String { localized(ar: "تعديل المنشور", en: "Edit post") }
     static var editComment: String { localized(ar: "تعديل التعليق", en: "Edit comment") }
+    static var follow: String { localized(ar: "متابعة", en: "Follow") }
+    static var following: String { localized(ar: "أتابعها", en: "Following") }
+    static var followers: String { localized(ar: "المتابعون", en: "Followers") }
+    static var profile: String { localized(ar: "الملف الشخصي", en: "Profile") }
+    static var myPosts: String { localized(ar: "منشوراتي", en: "My posts") }
+    static var noneYet: String { localized(ar: "لا يوجد بعد", en: "None yet") }
+    static var close: String { localized(ar: "إغلاق", en: "Close") }
+
     /// Shown under a reply to say who it addresses.
     static func replyingTo(_ name: String) -> String {
         localized(ar: "رداً على \(name)", en: "Replying to \(name)")

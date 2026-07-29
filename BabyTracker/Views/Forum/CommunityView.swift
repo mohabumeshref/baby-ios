@@ -13,6 +13,11 @@ struct CommunityView: View {
     @StateObject private var model = ForumFeedModel()
 
     @State private var showingCompose = false
+    @State private var editingPost: ForumPost?
+    @State private var postPendingDelete: ForumPost?
+    @State private var postPendingReport: ForumPost?
+    @State private var fullScreenImage: String?
+    @State private var profileUid: String?
     /// Navigation path holding post ids. A path plus
     /// `navigationDestination(for:)` is the iOS 16 form; the `item:` overload
     /// is iOS 17+.
@@ -39,14 +44,68 @@ struct CommunityView: View {
                         }
                         .tint(Warm.brand)
                     }
+                    // Own profile / my posts / sign out. Without this there is
+                    // no route to your own profile at all.
+                    ToolbarItem(placement: .cancellationAction) {
+                        Menu {
+                            Button {
+                                guard let uid = auth.uid else { return }
+                                path.append(ProfileRoute(
+                                    uid: uid,
+                                    name: auth.profile?.name,
+                                    image: auth.profile?.image_url
+                                ))
+                            } label: {
+                                Label(L.myPosts, systemImage: "person.crop.circle")
+                            }
+                            Button(role: .destructive) {
+                                try? auth.signOut()
+                            } label: {
+                                Label(L.signOut, systemImage: "rectangle.portrait.and.arrow.right")
+                            }
+                        } label: {
+                            Image(systemName: "person.crop.circle")
+                        }
+                        .tint(Warm.brand)
+                    }
                 }
             }
             .navigationDestination(for: String.self) { postId in
                 PostDetailView(postId: postId)
             }
+            .navigationDestination(for: ProfileRoute.self) { route in
+                ProfileView(uid: route.uid, initialName: route.name, initialImage: route.image)
+            }
         }
         .sheet(isPresented: $showingCompose) {
             ComposePostView { Task { await model.loadFirstPage() } }
+        }
+        .sheet(item: $editingPost) { post in
+            ComposePostView(editing: post) { Task { await model.loadFirstPage() } }
+        }
+        .fullScreenCover(item: Binding(
+            get: { fullScreenImage.map(IdentifiableURL.init) },
+            set: { fullScreenImage = $0?.value }
+        )) { item in
+            FullScreenImageView(url: item.value)
+        }
+        .confirmationDialog(L.deletePostConfirm,
+                            isPresented: .constant(postPendingDelete != nil),
+                            titleVisibility: .visible) {
+            Button(L.delete, role: .destructive) {
+                if let post = postPendingDelete { Task { await model.delete(post) } }
+                postPendingDelete = nil
+            }
+            Button(L.cancel, role: .cancel) { postPendingDelete = nil }
+        }
+        .confirmationDialog(L.reportConfirm,
+                            isPresented: .constant(postPendingReport != nil),
+                            titleVisibility: .visible) {
+            Button(L.report, role: .destructive) {
+                if let post = postPendingReport { Task { await model.report(post) } }
+                postPendingReport = nil
+            }
+            Button(L.cancel, role: .cancel) { postPendingReport = nil }
         }
         .task {
             auth.start()
@@ -98,7 +157,18 @@ struct CommunityView: View {
                                 onLike: {
                                     guard let uid = auth.uid else { return }
                                     Task { await model.toggleLike(on: post, uid: uid) }
-                                }
+                                },
+                                onTapAuthor: {
+                                    path.append(ProfileRoute(
+                                        uid: post.uid,
+                                        name: post.personName,
+                                        image: post.personImage
+                                    ))
+                                },
+                                onTapImage: { fullScreenImage = $0 },
+                                onEdit: post.uid == auth.uid ? { editingPost = post } : nil,
+                                onDelete: post.uid == auth.uid ? { postPendingDelete = post } : nil,
+                                onReport: post.uid == auth.uid ? nil : { postPendingReport = post }
                             )
                         }
                         .buttonStyle(.plain)

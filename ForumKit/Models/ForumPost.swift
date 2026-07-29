@@ -57,7 +57,13 @@ public struct ForumPost: Codable, Identifiable {
     /// older posts were backfilled server-side.
     public var keywords: [String]?
 
-    public var id: String { docId ?? UUID().uuidString }
+    /// Stable identity for SwiftUI. A fresh UUID here would change on every
+    /// access, making ForEach rebuild rows endlessly; falling back to the
+    /// author + timestamp is stable for the only case where docId is absent
+    /// (a post held in memory before it has been written).
+    public var id: String {
+        docId ?? "\(uid)-\(timestamp.seconds)-\(timestamp.nanoseconds)"
+    }
 
     public init(
         docId: String? = nil,

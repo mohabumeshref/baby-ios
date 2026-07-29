@@ -99,6 +99,23 @@ final class ForumFeedModel: ObservableObject {
         await loadFirstPage()
     }
 
+    // MARK: - Moderation
+
+    func delete(_ post: ForumPost) async {
+        guard let docId = post.docId else { return }
+        do {
+            try await store.deletePost(postId: docId)
+            posts.removeAll { $0.docId == docId }
+        } catch {
+            errorMessage = L.somethingWentWrong
+        }
+    }
+
+    func report(_ post: ForumPost) async {
+        guard let docId = post.docId else { return }
+        try? await store.reportPost(postId: docId)
+    }
+
     // MARK: - Reactions
 
     /// Optimistic like toggle - the row reflects the tap immediately and rolls
