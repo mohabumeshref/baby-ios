@@ -400,33 +400,135 @@ public final class ForumStore {
 
     // MARK: - Follow
 
-    /// Followers live at `Follow/{authorUid}/Followers/{followerUid}` with the
-    /// follower's uid as the document id - that is what `onPostCreated` reads.
+    /// Follows or unfollows a user.
+    ///
+    /// BOTH sides are written, atomically, exactly as pt-ios does:
+    ///   Follow/{targetUid}/Followers/{myUid}    - read by onPostCreated
+    ///   Follow/{myUid}/Followings/{targetUid}   - read by "Following" lists
+    ///                                             and mention suggestions
+    ///
+    /// Writing only the Followers side (as an earlier version of this did)
+    /// makes the follow invisible to pt-ios's following list and to its mention
+    /// candidate pool, while still delivering pushes - a split-brain that is
+    /// hard to notice and harder to explain. The field is `timestamp`, matching
+    /// what pt-ios writes.
     public func setFollowing(authorUid: String, following: Bool) async throws {
         try requireConfigured()
-        guard let uid = currentUid else { throw ForumError.notSignedIn }
+        guard let uid = currentUid, uid != authorUid else { throw ForumError.notSignedIn }
 
-        let ref = db.collection(ForumKit.Collection.follow)
+        let followers = db.collection(ForumKit.Collection.follow)
             .document(authorUid)
             .collection(ForumKit.Collection.followers)
             .document(uid)
 
+        let followings = db.collection(ForumKit.Collection.follow)
+            .document(uid)
+            .collection(ForumKit.Collection.followings)
+            .document(authorUid)
+
+        let batch = db.batch()
         if following {
-            try await ref.setData(["since": Timestamp(date: Date())])
+            let data = ["timestamp": FieldValue.serverTimestamp()]
+            batch.setData(data, forDocument: followers)
+            batch.setData(data, forDocument: followings)
         } else {
-            try await ref.delete()
+            batch.deleteDocument(followers)
+            batch.deleteDocument(followings)
         }
+        try await batch.commit()
     }
 
     public func isFollowing(authorUid: String) async throws -> Bool {
         try requireConfigured()
         guard let uid = currentUid else { return false }
         let doc = try await db.collection(ForumKit.Collection.follow)
-            .document(authorUid)
-            .collection(ForumKit.Collection.followers)
             .document(uid)
+            .collection(ForumKit.Collection.followings)
+            .document(authorUid)
             .getDocument()
         return doc.exists
+    }
+
+    /// Counts for a profile header.
+    public func followCounts(uid: String) async throws -> (followers: Int, following: Int) {
+        try requireConfigured()
+        let base = db.collection(ForumKit.Collection.follow).document(uid)
+        async let followers = base.collection(ForumKit.Collection.followers).getDocuments()
+        async let followings = base.collection(ForumKit.Collection.followings).getDocuments()
+        return (try await followers.count, try await followings.count)
+    }
+
+    /// The users following `uid`, or the users `uid` follows.
+    /// Document ids are the other party's uid; the User docs are fetched in
+    /// chunks of 10 because that is Firestore's `in` query limit.
+    public func follows(uid: String, kind: FollowKind) async throws -> [ForumUser] {
+        try requireConfigured()
+
+        let snapshot = try await db.collection(ForumKit.Collection.follow)
+            .document(uid)
+            .collection(kind.collectionName)
+            .getDocuments()
+
+        let ids = snapshot.documents.map(\.documentID).filter { !$0.isEmpty }
+        guard !ids.isEmpty else { return [] }
+
+        var users: [ForumUser] = []
+        for chunk in stride(from: 0, to: ids.count, by: 10).map({
+            Array(ids[$0..<min($0 + 10, ids.count)])
+        }) {
+            let docs = try await db.collection(ForumKit.Collection.users)
+                .whereField(FieldPath.documentID(), in: chunk)
+                .getDocuments()
+            users.append(contentsOf: docs.documents.compactMap { try? $0.data(as: ForumUser.self) })
+        }
+        return users
+    }
+
+    public enum FollowKind {
+        case followers
+        case following
+
+        var collectionName: String {
+            switch self {
+            case .followers: return ForumKit.Collection.followers
+            case .following: return ForumKit.Collection.followings
+            }
+        }
+    }
+
+    /// Prefix search over user names, for @mention suggestions.
+    ///
+    /// Firestore has no substring search, so pt-ios probes two fields with a
+    /// range query - `name` and `name_lower` - using the  high-codepoint
+    /// trick as the upper bound. Both are needed: older User docs have no
+    /// `name_lower`, and the cased field alone misses lowercase typing.
+    public func searchUsers(matching query: String, limit: Int = 6) async throws -> [ForumUser] {
+        try requireConfigured()
+
+        let q = query.trimmingCharacters(in: .whitespaces)
+        // Below two characters the result set is meaninglessly broad, and
+        // pt-ios applies the same floor.
+        guard q.count >= 2 else { return [] }
+
+        var found: [ForumUser] = []
+        for (field, value) in [("name", q), ("name_lower", q.lowercased())] {
+            let snapshot = try? await db.collection(ForumKit.Collection.users)
+                .order(by: field)
+                .start(at: [value])
+                .end(at: [value + "\u{f8ff}"])
+                .limit(to: limit)
+                .getDocuments()
+
+            for document in snapshot?.documents ?? [] {
+                if let user = try? document.data(as: ForumUser.self),
+                   !(user.name ?? "").isEmpty {
+                    found.append(user)
+                }
+            }
+        }
+
+        var seen = Set<String>()
+        return found.filter { seen.insert($0.uid ?? "").inserted }
     }
 
     // MARK: - Push token

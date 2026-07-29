@@ -49,7 +49,11 @@ public enum ForumKit {
         public static let answers = "Answers"
         public static let users = "User"
         public static let follow = "Follow"
+        /// Follow/{targetUid}/Followers/{followerUid}
         public static let followers = "Followers"
+        /// Follow/{followerUid}/Followings/{targetUid} - the mirror side.
+        /// Both are written together; see ForumStore.setFollowing.
+        public static let followings = "Followings"
         public static let reports = "Reports"
     }
 
