@@ -184,7 +184,9 @@ struct ComposePostView: View {
                 try await ForumStore.shared.createPost(
                     text: trimmed,
                     imageUrl: imageUrl,
-                    personName: isAnonymous ? L.anonymous : auth.profile?.name,
+                    personName: isAnonymous
+                        ? L.anonymousName(uid: ForumStore.shared.currentUid ?? "")
+                        : auth.profile?.name,
                     personImage: isAnonymous ? nil : auth.profile?.image_url,
                     autoApprove: await autoApprovePosts(),
                     mentions: nil

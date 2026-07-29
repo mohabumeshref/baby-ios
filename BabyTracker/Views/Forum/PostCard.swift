@@ -45,7 +45,11 @@ struct PostCard: View {
             avatar
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(post.isAnonymous ? L.anonymous : (post.personName ?? L.anonymous))
+                // Render the stored name verbatim. Anonymous names carry a
+                // per-user suffix ("مجهولة A1B2") that keeps two anonymous
+                // people distinguishable - swapping in the bare label here was
+                // discarding it while PT displayed it correctly.
+                Text((post.personName?.isEmpty == false) ? post.personName! : L.anonymous)
                     .font(WarmFont.heading)
                     .foregroundStyle(Warm.ink)
                 Text(relativeTime)
