@@ -62,14 +62,29 @@ struct HomeView: View {
 
     // MARK: - Stats
 
+    /// Three numbers side by side read as three unrelated stats - testers
+    /// couldn't tell whether the card was showing age, or progress, or
+    /// something else. The header names what the row is; the numbers are then
+    /// obviously the same fact in three units.
     private func statsCard(_ age: BabyAge) -> some View {
         WarmCard(radius: WarmMetrics.statCardRadius) {
-            HStack(spacing: 12) {
-                stat(value: age.days, label: L.dayUnit)
-                divider
-                stat(value: age.weeks, label: L.weekUnit)
-                divider
-                monthBadge(age.milestoneMonth)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 6) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Warm.eyebrow)
+                    Text(L.babyAge)
+                        .font(WarmFont.eyebrow)
+                        .foregroundStyle(Warm.eyebrow)
+                }
+
+                HStack(spacing: 12) {
+                    stat(value: age.days, label: L.dayUnit)
+                    divider
+                    stat(value: age.weeks, label: L.weekUnit)
+                    divider
+                    monthBadge(age.milestoneMonth)
+                }
             }
         }
     }

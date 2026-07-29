@@ -62,6 +62,9 @@ enum L {
             en: "Month \(String.number(index + 1))"
         )
     }
+    /// Header for the stats card, so the three numbers below it read as one
+    /// fact in three units rather than three separate statistics.
+    static var babyAge: String { localized(ar: "عمر طفلك", en: "Your baby's age") }
     static var dayUnit: String { localized(ar: "يوم", en: "days") }
     static var weekUnit: String { localized(ar: "أسبوع", en: "weeks") }
     static var monthUnit: String { localized(ar: "الشهر", en: "month") }
