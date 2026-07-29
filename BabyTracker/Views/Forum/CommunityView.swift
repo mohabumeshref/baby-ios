@@ -139,9 +139,17 @@ struct CommunityView: View {
                         row(for: post)
                     }
 
-                    if model.isLoadingMore {
-                        ProgressView().tint(Warm.brand).padding()
-                    }
+                    // Fixed-height footer. Inserting and removing a spinner
+                    // changes the content height mid-scroll, which shows up as
+                    // a judder when paging during a fast scroll - the slot is
+                    // permanent and only its contents toggle.
+                    Color.clear
+                        .frame(height: 44)
+                        .overlay {
+                            if model.isLoadingMore {
+                                ProgressView().tint(Warm.brand)
+                            }
+                        }
                 }
             }
             .padding(.horizontal, WarmMetrics.screenPadding)

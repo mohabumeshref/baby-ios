@@ -100,13 +100,8 @@ struct PostCard: View {
     private var avatar: some View {
         Group {
             if !post.isAnonymous,
-               let urlString = post.personImage,
-               let url = URL(string: urlString), !urlString.isEmpty {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    avatarPlaceholder
-                }
+               let urlString = post.personImage, !urlString.isEmpty {
+                CachedAsyncImage(url: urlString)
             } else {
                 avatarPlaceholder
             }
@@ -137,13 +132,7 @@ struct PostCard: View {
     }
 
     private func attachment(_ urlString: String) -> some View {
-        AsyncImage(url: URL(string: urlString)) { image in
-            image.resizable().scaledToFill()
-        } placeholder: {
-            RoundedRectangle(cornerRadius: WarmMetrics.chipRadius, style: .continuous)
-                .fill(Warm.chipOff)
-                .overlay(ProgressView().tint(Warm.muted))
-        }
+        CachedAsyncImage(url: urlString)
         .frame(maxWidth: .infinity)
         .frame(height: 180)
         .clipShape(RoundedRectangle(cornerRadius: WarmMetrics.chipRadius, style: .continuous))

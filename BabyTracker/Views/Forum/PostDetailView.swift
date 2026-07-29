@@ -397,12 +397,7 @@ private struct AnswerRow: View {
                 // pt-ios allows a photo on a comment; without this those
                 // comments render as text-only here and look truncated.
                 if let image = answer.image, !image.isEmpty {
-                    AsyncImage(url: URL(string: image)) { img in
-                        img.resizable().scaledToFill()
-                    } placeholder: {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Warm.chipOff)
-                    }
+                    CachedAsyncImage(url: image)
                     .frame(maxWidth: .infinity)
                     .frame(height: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
