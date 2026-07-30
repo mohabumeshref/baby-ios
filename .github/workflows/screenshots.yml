@@ -76,9 +76,13 @@ jobs:
               | grep -oE "[0-9A-Fa-f]{8}-[0-9A-Fa-f-]{27}"
           }
 
+          # if/then, not `[ -z x ] && y`: this step runs under `bash -e`, and a
+          # test that lands false is itself a failing command when it is last
+          # in the chain - so finding the device on the first try would abort
+          # the job.
           UDID=$(pick "iPhone 16 Pro Max")
-          [ -z "$UDID" ] && UDID=$(pick "iPhone .* Pro Max")
-          [ -z "$UDID" ] && UDID=$(pick "iPhone")
+          if [ -z "$UDID" ]; then UDID=$(pick "iPhone .* Pro Max"); fi
+          if [ -z "$UDID" ]; then UDID=$(pick "iPhone"); fi
 
           if [ -z "$UDID" ]; then
             echo "::error::No iPhone simulator on this image"

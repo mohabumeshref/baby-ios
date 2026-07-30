@@ -18,6 +18,14 @@ struct PostDetailView: View {
 
     @EnvironmentObject private var auth: ForumAuth
     @StateObject private var model = PostDetailModel()
+    @ObservedObject private var blockList = BlockList.shared
+
+    /// Comments from blocked authors are hidden the same way their posts are.
+    private var visibleAnswers: [ForumAnswer] {
+        let blocked = blockList.blocked
+        guard !blocked.isEmpty else { return model.answers }
+        return model.answers.filter { !blocked.contains($0.uid) }
+    }
     @Environment(\.dismiss) private var dismiss
 
     @State private var draft = ""
@@ -62,13 +70,13 @@ struct PostDetailView: View {
                             .frame(maxWidth: .infinity)
                     }
 
-                    if !model.answers.isEmpty {
+                    if !visibleAnswers.isEmpty {
                         Text(L.comments)
                             .font(WarmFont.heading)
                             .foregroundStyle(Warm.ink)
                             .padding(.top, 4)
 
-                        ForEach(model.answers) { answer in
+                        ForEach(visibleAnswers) { answer in
                             AnswerRow(
                                 answer: answer,
                                 isMine: answer.uid == auth.uid,
@@ -80,7 +88,10 @@ struct PostDetailView: View {
                                     answerBeingEdited = answer
                                     editDraft = answer.answer
                                 },
-                                onDelete: { Task { await model.deleteAnswer(answer) } }
+                                onDelete: { Task { await model.deleteAnswer(answer) } },
+                                onBlock: answer.uid == auth.uid
+                                    ? nil
+                                    : { blockList.block(answer.uid) }
                             )
                         }
                     }
@@ -351,6 +362,7 @@ private struct AnswerRow: View {
     let onReply: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
+    var onBlock: (() -> Void)? = nil
 
     var body: some View {
         WarmCard {
@@ -362,13 +374,22 @@ private struct AnswerRow: View {
 
                     Spacer()
 
-                    if isMine {
+                    // Someone else's comment still gets a menu now - it carries
+                    // the block action App Review expects on user content.
+                    if isMine || onBlock != nil {
                         Menu {
-                            Button { onEdit() } label: {
-                                Label(L.edit, systemImage: "pencil")
+                            if isMine {
+                                Button { onEdit() } label: {
+                                    Label(L.edit, systemImage: "pencil")
+                                }
+                                Button(role: .destructive) { onDelete() } label: {
+                                    Label(L.delete, systemImage: "trash")
+                                }
                             }
-                            Button(role: .destructive) { onDelete() } label: {
-                                Label(L.delete, systemImage: "trash")
+                            if let onBlock {
+                                Button(role: .destructive) { onBlock() } label: {
+                                    Label(L.blockUser, systemImage: "hand.raised")
+                                }
                             }
                         } label: {
                             Image(systemName: "ellipsis")

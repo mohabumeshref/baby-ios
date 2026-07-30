@@ -179,6 +179,24 @@ enum L {
     static func anonymousName(uid: String) -> String {
         anonymous + " " + String(uid.suffix(4)).uppercased()
     }
+    static var blockUser: String {
+        localized(ar: "حظر هذا المستخدم", en: "Block this user")
+    }
+    static var blockUserConfirm: String {
+        localized(
+            ar: "لن تظهر لكِ منشورات وتعليقات هذا المستخدم بعد الآن.",
+            en: "You will no longer see this user's posts or comments."
+        )
+    }
+    static var block: String { localized(ar: "حظر", en: "Block") }
+    static var blockedUsers: String {
+        localized(ar: "المستخدمون المحظورون", en: "Blocked users")
+    }
+    static var unblock: String { localized(ar: "إلغاء الحظر", en: "Unblock") }
+    static var noBlockedUsers: String {
+        localized(ar: "لا يوجد مستخدمون محظورون", en: "No blocked users")
+    }
+
     static var commentAnonymously: String {
         localized(ar: "لا أرغب بإظهار إسمي", en: "Don't show my name")
     }

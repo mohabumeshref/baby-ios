@@ -19,6 +19,7 @@ struct PostCard: View {
     var onEdit: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
     var onReport: (() -> Void)? = nil
+    var onBlock: (() -> Void)? = nil
 
     private var isLiked: Bool {
         guard let currentUid else { return false }
@@ -82,6 +83,11 @@ struct PostCard: View {
                             Label(L.delete, systemImage: "trash")
                         }
                     }
+                    if let onBlock {
+                        Button(role: .destructive) { onBlock() } label: {
+                            Label(L.blockUser, systemImage: "hand.raised")
+                        }
+                    }
                     if let onReport {
                         Button(role: .destructive) { onReport() } label: {
                             Label(L.report, systemImage: "flag")
@@ -99,7 +105,9 @@ struct PostCard: View {
         .onTapGesture { if !post.isAnonymous { onTapAuthor?() } }
     }
 
-    private var hasMenu: Bool { onEdit != nil || onDelete != nil || onReport != nil }
+    private var hasMenu: Bool {
+        onEdit != nil || onDelete != nil || onReport != nil || onBlock != nil
+    }
 
     private var avatar: some View {
         Group {

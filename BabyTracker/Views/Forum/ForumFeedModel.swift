@@ -29,7 +29,14 @@ final class ForumFeedModel: ObservableObject {
         self.store = store
     }
 
-    var displayedPosts: [ForumPost] { posts }
+    /// Blocked authors are filtered at the display edge rather than in the
+    /// query: the block list is device-local, and Firestore has no way to
+    /// express "not in this arbitrary set" for a paged query.
+    var displayedPosts: [ForumPost] {
+        let blocked = BlockList.shared.blocked
+        guard !blocked.isEmpty else { return posts }
+        return posts.filter { !blocked.contains($0.uid) }
+    }
 
     // MARK: - Feed
 

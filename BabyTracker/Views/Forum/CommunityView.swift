@@ -21,6 +21,7 @@ struct CommunityView: View {
     @State private var showingCompose = false
     @State private var editingPost: ForumPost?
     @State private var postPendingReport: ForumPost?
+    @ObservedObject private var blockList = BlockList.shared
     @State private var fullScreenImage: String?
 
     /// `NavigationPath`, not `[String]`: this stack carries two destination
@@ -196,7 +197,8 @@ struct CommunityView: View {
                 onTapImage: { fullScreenImage = $0 },
                 onEdit: isMine ? { editingPost = post } : nil,
                 onDelete: isMine ? { Task { await model.delete(post) } } : nil,
-                onReport: isMine ? nil : { postPendingReport = post }
+                onReport: isMine ? nil : { postPendingReport = post },
+                onBlock: isMine ? nil : { blockList.block(post.uid) }
             )
         }
         .buttonStyle(.plain)
