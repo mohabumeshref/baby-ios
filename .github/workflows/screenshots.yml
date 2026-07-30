@@ -66,10 +66,19 @@ jobs:
       - name: Select simulator
         id: sim
         run: |
-          UDID=$(xcrun simctl list devices available \
-                 | grep -E "^[[:space:]]+iPhone" \
-                 | head -1 \
-                 | grep -oE "[0-9A-Fa-f]{8}-[0-9A-Fa-f-]{27}")
+          # The App Store iPhone slot is 6.9" (1320x2868). Taking the first
+          # available iPhone gave a 6.3" Pro, whose 1206x2622 output Apple
+          # will not accept there, so pin a Pro Max.
+          pick () {
+            xcrun simctl list devices available \
+              | grep -E "^[[:space:]]+$1" \
+              | head -1 \
+              | grep -oE "[0-9A-Fa-f]{8}-[0-9A-Fa-f-]{27}"
+          }
+
+          UDID=$(pick "iPhone 16 Pro Max")
+          [ -z "$UDID" ] && UDID=$(pick "iPhone .* Pro Max")
+          [ -z "$UDID" ] && UDID=$(pick "iPhone")
 
           if [ -z "$UDID" ]; then
             echo "::error::No iPhone simulator on this image"
@@ -106,16 +115,14 @@ jobs:
           UDID="${{ steps.sim.outputs.udid }}"
           mkdir -p "$RUNNER_TEMP/shots"
 
-          # Throwaway forum account, so the community tab can be captured
-          # signed in. Empty when the secrets aren't set - the app then just
-          # shows the sign-in screen, which is still a valid screenshot.
-          SEED_EMAIL="${{ secrets.FORUM_TEST_EMAIL }}"
-          SEED_PASSWORD="${{ secrets.FORUM_TEST_PASSWORD }}"
-          AUTH_ARGS=""
-          if [ -n "$SEED_EMAIL" ] && [ -n "$SEED_PASSWORD" ]; then
-            AUTH_ARGS="-seed_email $SEED_EMAIL -seed_password $SEED_PASSWORD"
-            echo "forum auto-sign-in enabled"
-          fi
+          # -seed_demo 1 is store-screenshot mode: sample forum posts instead
+          # of the live feed, no ad banner, no ATT sheet. Sample posts matter
+          # for privacy as much as for looks - the real feed is other parents'
+          # personal writing, which does not belong in marketing material.
+          #
+          # (What was here before built an AUTH_ARGS string to sign into the
+          # live forum and then never passed it to the launch, so the community
+          # capture had always been a sign-in screen.)
 
           # The job can't tap the UI, so each screen is a separate launch
           # driven by the DEBUG-only launch arguments in ScreenshotSeed.swift:
@@ -126,6 +133,7 @@ jobs:
             xcrun simctl launch "$UDID" "$BUNDLE_ID" \
               -AppleLanguages "($LANG_CODE)" \
               -AppleLocale "${LANG_CODE}_JO" \
+              -seed_demo 1 \
               -seed_baby_days_ago "$days" \
               -seed_tab "$tab"
             sleep 6
@@ -140,12 +148,18 @@ jobs:
           # Onboarding has no seeded date, so it renders the first-run screen.
           xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
           xcrun simctl launch "$UDID" "$BUNDLE_ID" \
-            -AppleLanguages "($LANG_CODE)" -AppleLocale "${LANG_CODE}_JO"
+            -AppleLanguages "($LANG_CODE)" -AppleLocale "${LANG_CODE}_JO" \
+            -seed_demo 1
           sleep 6
           xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/00-onboarding-${LANG_CODE}.png"
 
           echo "Captured:"
           ls -la "$RUNNER_TEMP/shots"
+          for f in "$RUNNER_TEMP/shots"/*.png; do
+            printf '%s: ' "$(basename "$f")"
+            sips -g pixelWidth -g pixelHeight "$f" | awk '/pixel/ {printf "%s ", $2}'
+            echo
+          done
 
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
