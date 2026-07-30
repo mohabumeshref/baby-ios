@@ -198,10 +198,18 @@ Worth stating plainly in the privacy policy; it is a genuine selling point.
 
 ## 5. App Review information
 
-**Demo account — BLOCKED, required.** The community tab sits behind a sign-in,
-so Apple must be given a working account or the app gets rejected under
-Guideline 2.1 as incomplete. Create a throwaway forum account and enter its
-email and password in App Review Information. Do not reuse a personal account.
+**Demo account — required.** The community tab sits behind a sign-in, so Apple
+must be given a working account or the app gets rejected under Guideline 2.1 as
+incomplete.
+
+A demo account has been created. **Its credentials are deliberately not written
+in this file** — they go straight into the *App Review Information* fields in
+App Store Connect, which only Apple can read. This repo already had one
+credential leak; a password in a tracked file is the same mistake in a smaller
+hat.
+
+Before submitting, sign in with it once in the app to confirm it actually works.
+A demo account Apple cannot log into is a rejection.
 
 **Review notes** — paste this:
 
