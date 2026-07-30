@@ -55,7 +55,8 @@ struct CommunityView: View {
         ))
         .task {
             auth.start()
-            if auth.isSignedIn { await model.loadFirstPage() }
+            if auth.isSignedIn || ScreenshotSeed.isDemo { await model.loadFirstPage() }
+            guard !ScreenshotSeed.isDemo else { return }
             await InterstitialAdManager.shared.preload()
         }
         .onChange(of: auth.isSignedIn) { signedIn in
@@ -71,7 +72,7 @@ struct CommunityView: View {
 
     @ViewBuilder
     private var gatedContent: some View {
-        if auth.isSignedIn {
+        if auth.isSignedIn || ScreenshotSeed.isDemo {
             feed
         } else {
             AuthView()

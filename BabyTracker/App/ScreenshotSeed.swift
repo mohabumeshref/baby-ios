@@ -14,6 +14,7 @@
 //
 
 import Foundation
+import FirebaseFirestore
 
 enum ScreenshotSeed {
 
@@ -30,6 +31,17 @@ enum ScreenshotSeed {
         let defaults = UserDefaults.standard
         guard defaults.object(forKey: "seed_tab") != nil else { return nil }
         return defaults.integer(forKey: "seed_tab")
+    }
+
+    /// `-seed_demo 1` - App Store screenshot mode.
+    ///
+    /// Renders the community tab from local sample posts instead of the live
+    /// forum, and silences ads and the ATT prompt so neither lands in a store
+    /// screenshot. The sample content matters for more than tidiness: the real
+    /// feed is other parents' personal posts, and putting those in marketing
+    /// material would republish them outside the app they were written for.
+    static var isDemo: Bool {
+        UserDefaults.standard.bool(forKey: "seed_demo")
     }
 
     /// `-seed_email x -seed_password y` - signs in automatically so the
@@ -52,6 +64,58 @@ enum ScreenshotSeed {
     #else
     static var birthDate: Date? { nil }
     static var tab: Int? { nil }
+    static var isDemo: Bool { false }
     static var credentials: (email: String, password: String)? { nil }
     #endif
 }
+
+#if DEBUG
+extension ScreenshotSeed {
+    /// Invented posts by invented people, for store screenshots only.
+    static var demoPosts: [ForumPost] {
+        func post(
+            _ id: String,
+            _ name: String,
+            _ text: String,
+            likes: Int,
+            answers: Int,
+            hoursAgo: Int
+        ) -> ForumPost {
+            ForumPost(
+                docId: id,
+                uid: "demo-\(id)",
+                description: text,
+                imageUrl: nil,
+                personName: name,
+                personImage: nil,
+                status: true,
+                timestamp: Timestamp(
+                    date: Calendar.current.date(
+                        byAdding: .hour, value: -hoursAgo, to: Date()
+                    ) ?? Date()
+                ),
+                views: 0,
+                likes: likes,
+                answers: answers,
+                array: Array(repeating: "demo", count: likes),
+                notificationarray: []
+            )
+        }
+
+        return [
+            post("d1", "ريم",
+                 "طفلي عمره ٤ أشهر وبدأ يتقلب من بطنه لظهره. متى بدأ أطفالكم بالجلوس؟",
+                 likes: 12, answers: 5, hoursAgo: 2),
+            post("d2", "مجهولة A1B2",
+                 "أول مرة يضحك ابني بصوت عالي اليوم. أجمل شعور بالدنيا ❤️",
+                 likes: 34, answers: 8, hoursAgo: 6),
+            post("d3", "نور",
+                 "نصيحة لكل أم جديدة: نامي وقت ما ينام طفلك، الغسيل بيستنى.",
+                 likes: 27, answers: 11, hoursAgo: 20),
+            post("d4", "سارة",
+                 "بنتي عمرها ٧ شهور وما زالت ما طلعت أسنانها، هل هذا طبيعي؟",
+                 likes: 9, answers: 6, hoursAgo: 30),
+        ]
+    }
+}
+#endif

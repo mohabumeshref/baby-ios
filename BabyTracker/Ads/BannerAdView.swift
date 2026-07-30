@@ -33,6 +33,12 @@ struct BannerAdView: View {
             }
         }
         .task {
+            // A test-mode ad banner in a store screenshot is both ugly and a
+            // review risk.
+            if ScreenshotSeed.isDemo {
+                isEnabled = false
+                return
+            }
             // Ads only exist once Firebase supplied Remote Config; without it
             // the default keeps them on, which is the intended shipping state.
             isEnabled = await RemoteConfigGate.shared.bool(

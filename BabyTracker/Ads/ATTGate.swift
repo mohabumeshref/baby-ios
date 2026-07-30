@@ -32,6 +32,8 @@ enum ATTGate {
     @MainActor
     @discardableResult
     static func requestIfNeeded() async -> ATTrackingManager.AuthorizationStatus {
+        // A store screenshot must not contain a system permission sheet.
+        if ScreenshotSeed.isDemo { return status }
         guard status == .notDetermined else { return status }
         return await ATTrackingManager.requestTrackingAuthorization()
     }

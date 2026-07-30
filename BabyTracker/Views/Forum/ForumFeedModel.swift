@@ -34,6 +34,13 @@ final class ForumFeedModel: ObservableObject {
     // MARK: - Feed
 
     func loadFirstPage() async {
+        #if DEBUG
+        if ScreenshotSeed.isDemo {
+            posts = ScreenshotSeed.demoPosts
+            hasMore = false
+            return
+        }
+        #endif
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
