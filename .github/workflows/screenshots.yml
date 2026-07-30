@@ -69,12 +69,18 @@ jobs:
           # The App Store iPhone slot is 6.9" (1320x2868). Taking the first
           # available iPhone gave a 6.3" Pro, whose 1206x2622 output Apple
           # will not accept there, so pin a Pro Max.
+          # `|| true` matters: a grep that matches nothing exits 1, and under
+          # `bash -e` that aborts the whole step at the first probe instead of
+          # falling through to the next candidate.
           pick () {
             xcrun simctl list devices available \
               | grep -E "^[[:space:]]+$1" \
               | head -1 \
-              | grep -oE "[0-9A-Fa-f]{8}-[0-9A-Fa-f-]{27}"
+              | grep -oE "[0-9A-Fa-f]{8}-[0-9A-Fa-f-]{27}" || true
           }
+
+          echo "Available iPhone simulators:"
+          xcrun simctl list devices available | grep -E "^[[:space:]]+iPhone" || true
 
           # if/then, not `[ -z x ] && y`: this step runs under `bash -e`, and a
           # test that lands false is itself a failing command when it is last
