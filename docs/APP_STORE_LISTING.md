@@ -63,7 +63,28 @@ Everything below is ready to paste into App Store Connect. Fields marked
 
 ---
 
-## 2. English (en-US)
+## 2. English (en-US) — recommend NOT publishing this localization yet
+
+**The app's interface is localized; its content is not.** Chrome ("This month's
+skills", "Your baby's age", tab names) switches to English, but every milestone,
+tier title and week-by-week article stays Arabic, because `weeks.json` and
+`skills.json` were ported from the Arabic Android app and have no English text.
+
+An English store listing therefore sells an English-language app to people who
+would open it and find Arabic content — a poor first impression, a likely
+one-star pattern, and a plausible review rejection for a broken localization.
+
+**Recommendation: publish Arabic only for now.** The English app localization
+still helps Arabic speakers whose phone is set to English; it just should not be
+advertised as an English app.
+
+If you want the English listing anyway, keep the copy below but add this line at
+the top of the description so nobody is misled:
+
+```
+Note: the milestone and week-by-week content in this app is written in Arabic.
+```
+
 
 **Name** (30 max)
 

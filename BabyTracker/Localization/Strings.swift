@@ -75,7 +75,7 @@ enum L {
     // month" next to a number, which is wrong for a unit label.
     static var dayUnit: String { localized(ar: "يوم", en: "days") }
     static var weekUnit: String { localized(ar: "أسبوع", en: "weeks") }
-    static var monthUnit: String { localized(ar: "شهر", en: "month") }
+    static var monthUnit: String { localized(ar: "شهر", en: "months") }
     static var progress: String { localized(ar: "التقدّم", en: "Progress") }
     /// "3 من 4"
     static func ofTotal(_ done: Int, _ total: Int) -> String {
