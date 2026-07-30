@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "pregnancy-tracker-57bf7"
+  },
+  "targets": {
+    "pregnancy-tracker-57bf7": {
+      "hosting": {
+        "baby-privacy": ["baby-ar-ios"]
+      }
+    }
+  }
+}

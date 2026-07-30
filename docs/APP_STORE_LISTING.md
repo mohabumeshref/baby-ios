@@ -63,7 +63,10 @@ Everything below is ready to paste into App Store Connect. Fields marked
 
 ---
 
-## 2. English (en-US) — recommend NOT publishing this localization yet
+## 2. English (en-US) — DECIDED: do not publish this localization
+
+Kept here for reference only. The Arabic listing is the one to submit.
+
 
 **The app's interface is localized; its content is not.** Chrome ("This month's
 skills", "Your baby's age", tab names) switches to English, but every milestone,
@@ -151,8 +154,8 @@ development, talk to your pediatrician.
 | Age rating | expect **12+** — the questionnaire's user-generated-content answer drives this |
 | Price | Free |
 | Contains ads | Yes |
-| Support URL | **BLOCKED — needed** |
-| Privacy policy URL | **BLOCKED — required by Apple, submission cannot proceed without it** |
+| Support URL | **NEEDED** — see open items |
+| Privacy policy URL | `https://baby-ar-ios.web.app/` once deployed (see `firebase/README.md`) |
 | Marketing URL | optional, may be left empty |
 
 ### Age-rating questionnaire — answers that match the app
@@ -239,11 +242,30 @@ and must not appear in marketing material.
 
 ## 7. Before submitting — open items
 
-1. **Privacy policy URL** — hard requirement, none exists yet.
-2. **Support URL** — hard requirement.
-3. **Demo account** — hard requirement for the forum.
-4. **Export compliance** — `ITSAppUsesNonExemptEncryption` is already set in
+1. **Deploy the privacy policy.** From `firebase/`:
+
+   ```bash
+   firebase hosting:sites:create baby-ar-ios --project pregnancy-tracker-57bf7
+   firebase deploy --only hosting:baby-privacy --project pregnancy-tracker-57bf7
+   ```
+
+   Confirm `https://baby-ar-ios.web.app/` loads — Apple rejects a 404 here.
+   It deploys to a **separate site** from `pt-ar-ios.web.app` on purpose: that
+   one serves the pregnancy app's policy, which its live listing points at.
+
+2. **Support URL** — still needed, and it must resolve. The cheapest honest
+   option is a one-page contact page on the same new site.
+
+3. **Demo account** — create a throwaway forum account and put its email and
+   password in App Review Information. Without it the Community tab is a
+   locked door and the app gets rejected as incomplete. Create this yourself;
+   it is a credential, not something to hand to a tool.
+
+4. **Export compliance** — `ITSAppUsesNonExemptEncryption` is already in
    `Info.plist`, so no per-submission question should appear.
-5. Blocking shipped in build 11; **submit build 11 or later**, not build 10 —
-   Guideline 1.2 expects blocking on user-generated content, and a reviewer
-   who looks for it in build 10 will not find it.
+
+5. **Submit build 11 or later, not build 10.** User blocking landed in 11, and
+   Guideline 1.2 expects it on user-generated content.
+
+6. **Age rating** — answer the user-generated-content question truthfully;
+   expect 12+.
