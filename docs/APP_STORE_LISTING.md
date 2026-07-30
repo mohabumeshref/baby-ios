@@ -1,9 +1,10 @@
 # App Store listing — My Baby & I / أنا و طفلي
 
-App ID `6795675339` · bundle `com.wecare.arabicbaby` · build **10**
+App ID `6795675339` · bundle `com.wecare.arabicbaby` · submit **build 11 or later**
 
-Everything below is ready to paste into App Store Connect. Fields marked
-**BLOCKED** need a decision or an asset only the account holder can supply.
+Ready to paste into App Store Connect. Decisions already made: **Arabic-only
+listing**, privacy policy on its own Firebase Hosting site. Section 7 lists what
+still has to happen before Submit.
 
 ---
 
@@ -205,8 +206,10 @@ email and password in App Review Information. Do not reuse a personal account.
 **Review notes** — paste this:
 
 ```
-The app is Arabic-first and lays out right-to-left. It also ships a full
-English localization; switch the device language to English to review it.
+This is an Arabic-language app and lays out right-to-left. All content is in
+Arabic. (The interface strings also have English translations for Arabic
+speakers whose device is set to English, but the app is not marketed in
+English.)
 
 Milestones and week-by-week content work with no account. Only the Community
 tab requires sign-in — please use the demo account provided.
