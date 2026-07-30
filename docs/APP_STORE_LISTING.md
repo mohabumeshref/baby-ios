@@ -155,8 +155,8 @@ development, talk to your pediatrician.
 | Age rating | expect **12+** — the questionnaire's user-generated-content answer drives this |
 | Price | Free |
 | Contains ads | Yes |
-| Support URL | **NEEDED** — see open items |
-| Privacy policy URL | `https://baby-ar-ios.web.app/` once deployed (see `firebase/README.md`) |
+| Support URL | `https://baby-ar-ios.web.app/support` |
+| Privacy policy URL | `https://baby-ar-ios.web.app/privacy` |
 | Marketing URL | optional, may be left empty |
 
 ### Age-rating questionnaire — answers that match the app
@@ -264,8 +264,10 @@ and must not appear in marketing material.
    It deploys to a **separate site** from `pt-ar-ios.web.app` on purpose: that
    one serves the pregnancy app's policy, which its live listing points at.
 
-2. **Support URL** — still needed, and it must resolve. The cheapest honest
-   option is a one-page contact page on the same new site.
+2. **Support URL** — `https://baby-ar-ios.web.app/support`, deployed alongside
+   the privacy policy. It carries the contact address and an FAQ covering the
+   report/block controls, which is also the "published contact information"
+   half of Guideline 1.2.
 
 3. **Demo account** — create a throwaway forum account and put its email and
    password in App Review Information. Without it the Community tab is a

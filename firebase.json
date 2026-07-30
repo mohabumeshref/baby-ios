@@ -1,0 +1,25 @@
+{
+  "hosting": [
+    {
+      "target": "baby-privacy",
+      "public": "docs/site",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "cleanUrls": true,
+      "headers": [
+        {
+          "source": "**/*.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "max-age=3600"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
