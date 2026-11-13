@@ -98,6 +98,22 @@ enum Warm {
         tiers[min(max(index, 0), tiers.count - 1)]
     }
 
+    // MARK: - Vaccines card
+    //
+    // The home screen's one filled card, from the Android wr_bg_vax_card
+    // gradient. Horizontal, like that drawable's angle=0.
+
+    static let vaxCardGradient = LinearGradient(
+        colors: [Color(hex: 0xF8B07E), Color(hex: 0xEF8A4A)],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
+
+    /// #33FFFFFF - the translucent disc behind the card's icon.
+    static let vaxIconCircle = Color.white.opacity(Double(0x33) / 255)
+    /// #E6FFFFFF - the card's subtitle, a touch softer than the title.
+    static let vaxCardSubtitle = Color.white.opacity(Double(0xE6) / 255)
+
     // MARK: - Weeks screen
 
     static let nowPillBackground = Color(hex: 0xFFF0E5)

@@ -14,14 +14,41 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var profile: BabyProfile
 
+    @EnvironmentObject private var vaccines: VaccineStore
+
     private let content = ContentStore.shared
 
+    /// Android divides elapsed days by 30.44; same divisor, so a dose reads as
+    /// due on the same day in both apps.
+    private var babyMonths: Double {
+        guard let birth = profile.birthDate else { return 0 }
+        let days = Calendar.current.dateComponents([.day], from: birth, to: Date()).day ?? 0
+        return Double(days) / 30.44
+    }
+
     var body: some View {
+        NavigationStack {
+            scrollContent
+                .warmBackground()
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationDestination(for: VaccinesRoute.self) { _ in
+                    VaccinesView()
+                }
+                .task { await vaccines.refineCountryFromIP() }
+        }
+    }
+
+    /// Marker for the push - the destination takes no parameters, but
+    /// `navigationDestination` needs a value type to key on.
+    struct VaccinesRoute: Hashable {}
+
+    private var scrollContent: some View {
         ScrollView {
             VStack(spacing: 16) {
                 if let age = profile.age {
                     hero(age)
                     statsCard(age)
+                    vaccinesCard
 
                     if let month = content.skills(forMonth: age.milestoneMonth) {
                         ForEach(Array(month.tiers.enumerated()), id: \.offset) { index, tier in
@@ -42,7 +69,67 @@ struct HomeView: View {
             .padding(.horizontal, WarmMetrics.screenPadding)
             .padding(.vertical, 20)
         }
-        .warmBackground()
+        // Below the vaccines card, never above it - the card is what the
+        // screen is pointing at right now.
+        .safeAreaInset(edge: .bottom) {
+            BannerAdView()
+        }
+    }
+
+    // MARK: - Vaccines
+
+    /// The one filled card on an otherwise white-on-cream screen, because it
+    /// is the new feature and the screen's current call to action.
+    private var vaccinesCard: some View {
+        NavigationLink(value: VaccinesRoute()) {
+            HStack(spacing: 14) {
+                Image(systemName: "chevron.forward")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.8))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(L.vaxEntry)
+                        .font(WarmFont.title)
+                        .foregroundStyle(.white)
+
+                    Text(vaccines.summary(babyMonths: babyMonths))
+                        .font(WarmFont.caption)
+                        .foregroundStyle(Warm.vaxCardSubtitle)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+
+                Text("💉")
+                    .font(.system(size: 28))
+                    .frame(width: 56, height: 56)
+                    .background(Circle().fill(Warm.vaxIconCircle))
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 20)
+            .background(
+                RoundedRectangle(cornerRadius: WarmMetrics.statCardRadius, style: .continuous)
+                    .fill(Warm.vaxCardGradient)
+            )
+            .shadow(color: Warm.brand.opacity(0.22), radius: 10, x: 0, y: 5)
+            // The badge overhangs the card's top edge, so it is drawn as an
+            // overlay with a negative offset and the card carries top padding
+            // to make room for it.
+            .overlay(alignment: .topLeading) {
+                Text(L.vaxNewBadge)
+                    .font(WarmFont.eyebrow)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(Warm.green))
+                    .shadow(color: Warm.green.opacity(0.35), radius: 4, x: 0, y: 2)
+                    .offset(x: 18, y: -9)
+            }
+            .padding(.top, 9)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L.vaxEntry + ". " + L.vaxNewBadge)
     }
 
     // MARK: - Hero
@@ -187,5 +274,6 @@ private struct TierCard: View {
             return p
         }())
         .environmentObject(MilestoneStore(defaults: UserDefaults(suiteName: "preview")!))
+        .environmentObject(VaccineStore(defaults: UserDefaults(suiteName: "preview")!))
         .environment(\.layoutDirection, .rightToLeft)
 }

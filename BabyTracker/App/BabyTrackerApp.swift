@@ -13,6 +13,10 @@ struct BabyTrackerApp: App {
 
     @StateObject private var profile = BabyProfile()
     @StateObject private var milestones = MilestoneStore()
+    /// One instance app-wide: the home card's summary and the schedule
+    /// screen are two views of the same state, and two stores would each
+    /// cache their own copy of it.
+    @StateObject private var vaccines = VaccineStore()
     @StateObject private var notifications = NotificationManager.shared
     @StateObject private var router = NotificationRouter.shared
     @StateObject private var auth = ForumAuth.shared
@@ -24,6 +28,7 @@ struct BabyTrackerApp: App {
             RootView()
                 .environmentObject(profile)
                 .environmentObject(milestones)
+                .environmentObject(vaccines)
                 .environmentObject(notifications)
                 .environmentObject(router)
                 .environmentObject(auth)

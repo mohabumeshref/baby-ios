@@ -28,7 +28,15 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 from arabic_text import ShapedFont
 
-CANVAS = (1320, 2868)
+# App Store iPhone slots. 6.9" is the one to fill - Apple scales it down for
+# every smaller iPhone. 6.5" is here because that slot rejects anything but
+# its own four sizes, so a listing already pointed at it needs matching assets.
+SIZES = {
+    "6.9": (1320, 2868),
+    "6.5": (1284, 2778),
+}
+
+CANVAS = SIZES["6.9"]
 
 # Warm & Refined, matching the app.
 BG_TOP = (255, 233, 215)
@@ -99,32 +107,35 @@ def centered(image, y, text, fnt, fill, width, lang):
 def compose(src_path, caption, sub, lang, out_path):
     canvas = gradient(CANVAS).convert("RGBA")
 
-    title_font = font("Cairo-Bold.ttf", 76)
-    sub_font = font("Cairo-Regular.ttf", 44)
+    # Type and spacing scale with the canvas so both slot sizes look identical.
+    k = CANVAS[0] / 1320.0
+    title_font = font("Cairo-Bold.ttf", int(76 * k))
+    sub_font = font("Cairo-Regular.ttf", int(44 * k))
 
-    top = 132
+    top = int(132 * k)
     h = centered(canvas, top, caption, title_font, INK, CANVAS[0], lang)
-    centered(canvas, top + h + 72, sub, sub_font, BRAND, CANVAS[0], lang)
+    centered(canvas, top + h + int(72 * k), sub, sub_font, BRAND, CANVAS[0], lang)
 
     # Device shot, scaled to leave the caption band clear.
     shot = Image.open(src_path).convert("RGB")
     target_w = int(CANVAS[0] * 0.82)
     target_h = int(shot.size[1] * (target_w / shot.size[0]))
 
-    max_h = CANVAS[1] - 520
+    max_h = CANVAS[1] - int(520 * k)
     if target_h > max_h:
         target_h = max_h
         target_w = int(shot.size[0] * (target_h / shot.size[1]))
 
     shot = shot.resize((target_w, target_h), Image.LANCZOS)
-    shot = rounded(shot, 56)
+    shot = rounded(shot, int(56 * k))
 
     x = (CANVAS[0] - target_w) // 2
-    y = 470
+    y = int(470 * k)
 
     shadow = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
     ImageDraw.Draw(shadow).rounded_rectangle(
-        [(x, y + 16), (x + target_w, y + target_h + 16)], radius=56, fill=(120, 70, 40, 70)
+        [(x, y + 16), (x + target_w, y + target_h + 16)],
+        radius=int(56 * k), fill=(120, 70, 40, 70)
     )
     canvas = Image.alpha_composite(
         canvas, shadow.filter(ImageFilter.GaussianBlur(26))
@@ -140,7 +151,11 @@ def main():
     ap.add_argument("shots_dir")
     ap.add_argument("out_dir")
     ap.add_argument("--lang", default="ar", choices=["ar", "en"])
+    ap.add_argument("--size", default="6.9", choices=sorted(SIZES))
     args = ap.parse_args()
+
+    global CANVAS
+    CANVAS = SIZES[args.size]
 
     os.makedirs(args.out_dir, exist_ok=True)
 

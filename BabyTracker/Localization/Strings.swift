@@ -259,4 +259,97 @@ enum L {
     static func replyingTo(_ name: String) -> String {
         localized(ar: "رداً على \(name)", en: "Replying to \(name)")
     }
+
+    // MARK: - Vaccines (Android: vax_* in res/values/strings.xml)
+
+    static var vaxTitle: String {
+        localized(ar: "جدول التطعيمات", en: "Vaccine schedule")
+    }
+    static var vaxCountry: String { localized(ar: "الدولة", en: "Country") }
+    static var vaxChangeCountry: String { localized(ar: "تغيير", en: "Change") }
+    static var vaxPickCountry: String {
+        localized(ar: "اختاري الدولة", en: "Choose your country")
+    }
+    static var vaxCountryPurpose: String {
+        localized(
+            ar: "لعرض جدول التطعيمات المناسب لطفلكِ",
+            en: "So we can show the right vaccine schedule for your baby"
+        )
+    }
+    static var vaxSearchCountry: String {
+        localized(ar: "ابحثي عن دولة…", en: "Search for a country…")
+    }
+    static var vaxSelectedCountry: String {
+        localized(ar: "المختارة", en: "Selected")
+    }
+
+    /// Home card.
+    static var vaxEntry: String { localized(ar: "مطاعيم طفلك", en: "Your baby's vaccines") }
+    static var vaxNewBadge: String { localized(ar: "جديد", en: "NEW") }
+    static var vaxCardHint: String {
+        localized(ar: "اضغطي لعرض الجدول وتسجيل ما تم", en: "Tap to view and tick off doses")
+    }
+
+    static var vaxDueNow: String { localized(ar: "حان موعده", en: "Due now") }
+    static var vaxCustomRow: String { localized(ar: "مخصص", en: "Custom") }
+    static var vaxAdd: String { localized(ar: "إضافة مطعوم", en: "Add a vaccine") }
+    static var vaxEditVaccine: String {
+        localized(ar: "تعديل المطعوم", en: "Edit vaccine")
+    }
+    static var vaxNameHint: String { localized(ar: "اسم التطعيم", en: "Vaccine name") }
+    static var vaxAgeHint: String {
+        localized(
+            ar: "العمر (مثال: شهر 2 ، أسبوع 6 ، عند الولادة)",
+            en: "Age (e.g. month 2, week 6, at birth)"
+        )
+    }
+    static var vaxDeleteTitle: String { localized(ar: "حذف التطعيم", en: "Delete vaccine") }
+    static func vaxDeleteMessage(_ name: String) -> String {
+        localized(
+            ar: "هل تريدين حذف \"\(name)\" من الجدول؟",
+            en: "Remove \"\(name)\" from the schedule?"
+        )
+    }
+    static var vaxLongPressHint: String {
+        localized(
+            ar: "اضغطي مطوّلاً على أي تطعيم للتعديل أو الحذف",
+            en: "Press and hold a vaccine to edit or delete it"
+        )
+    }
+    static var vaxEditDate: String { localized(ar: "تعديل", en: "Edit") }
+    static var vaxDateTitle: String {
+        localized(ar: "تاريخ أخذ التطعيم", en: "Date the dose was given")
+    }
+
+    /// "جرعة 2" - only shown for multi-dose vaccines.
+    static func doseNumber(_ round: Int) -> String {
+        localized(ar: "جرعة \(String.number(round))", en: "dose \(round)")
+    }
+
+    /// "3 / 12  تطعيم مكتمل"
+    static func vaxProgress(done: Int, total: Int) -> String {
+        let counts = "\(String.number(done)) / \(String.number(total))"
+        return localized(ar: "\(counts)  تطعيم مكتمل", en: "\(counts) doses complete")
+    }
+
+    // MARK: - Onboarding steps
+
+    static var onboardingWelcomeTitle: String {
+        localized(ar: "أهلاً بكِ في أنا و طفلي", en: "Welcome to My Baby & I")
+    }
+    static var onboardingWelcomeBody: String {
+        localized(
+            ar: "تابعي مهارات طفلك، وجدول تطعيماته، ونموّه أسبوعاً بأسبوع.",
+            en: "Follow your baby's milestones, vaccine schedule, and week-by-week growth."
+        )
+    }
+    static var onboardingBirthDateTitle: String {
+        localized(ar: "تاريخ ميلاد طفلك", en: "Your baby's birth date")
+    }
+    static var onboardingTapToChangeDate: String {
+        localized(ar: "اضغطي لتغيير التاريخ", en: "Tap to change the date")
+    }
+    static var next: String { localized(ar: "التالي", en: "Next") }
+    static var previous: String { localized(ar: "السابق", en: "Back") }
+    static var done: String { localized(ar: "تم", en: "Done") }
 }
