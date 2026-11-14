@@ -50,7 +50,17 @@ struct HomeView: View {
                     statsCard(age)
                     vaccinesCard
 
+                    // In the scroll content directly under the card, not
+                    // pinned to the screen edge, and sized to the same width
+                    // as the cards it sits between.
+                    BannerAdView(
+                        width: UIScreen.main.bounds.width
+                            - WarmMetrics.screenPadding * 2
+                    )
+
                     if let month = content.skills(forMonth: age.milestoneMonth) {
+                        skillsSectionHeader
+
                         ForEach(Array(month.tiers.enumerated()), id: \.offset) { index, tier in
                             TierCard(
                                 tier: tier,
@@ -69,11 +79,6 @@ struct HomeView: View {
             .padding(.horizontal, WarmMetrics.screenPadding)
             .padding(.vertical, 20)
         }
-        // Below the vaccines card, never above it - the card is what the
-        // screen is pointing at right now.
-        .safeAreaInset(edge: .bottom) {
-            BannerAdView()
-        }
     }
 
     // MARK: - Vaccines
@@ -83,9 +88,10 @@ struct HomeView: View {
     private var vaccinesCard: some View {
         NavigationLink(value: VaccinesRoute()) {
             HStack(spacing: 14) {
-                Image(systemName: "chevron.forward")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.8))
+                Text("💉")
+                    .font(.system(size: 28))
+                    .frame(width: 56, height: 56)
+                    .background(Circle().fill(Warm.vaxIconCircle))
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(L.vaxEntry)
@@ -101,10 +107,13 @@ struct HomeView: View {
 
                 Spacer(minLength: 0)
 
-                Text("💉")
-                    .font(.system(size: 28))
-                    .frame(width: 56, height: 56)
-                    .background(Circle().fill(Warm.vaxIconCircle))
+                // Last, so it sits on the trailing edge - the left in Arabic.
+                // `chevron.forward` rather than `.right`: the direction-aware
+                // symbol mirrors itself, so it points the way the reader
+                // travels in either layout direction.
+                Image(systemName: "chevron.forward")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.8))
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 20)
@@ -135,16 +144,34 @@ struct HomeView: View {
     // MARK: - Hero
 
     private func hero(_ age: BabyAge) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(L.thisMonthsSkills)
-                .font(WarmFont.eyebrow)
-                .foregroundStyle(Warm.eyebrow)
+        // The age headline alone. "مهارات هذا الشهر" used to sit above it as an
+        // eyebrow; it now names the skills section further down the screen,
+        // where the chips it refers to actually are.
+        Text(L.monthHeadline(age.milestoneMonth))
+            .font(WarmFont.display)
+            .foregroundStyle(Warm.ink)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
-            Text(L.monthHeadline(age.milestoneMonth))
-                .font(WarmFont.display)
-                .foregroundStyle(Warm.ink)
+    // MARK: - Skills section
+
+    /// Titles the skills cards and says what to do with them. The chips look
+    /// like labels until you know they are tappable, so the instruction earns
+    /// its line.
+    private var skillsSectionHeader: some View {
+        VStack(spacing: 6) {
+            Text(L.thisMonthsSkills)
+                .font(WarmFont.sectionHeading)
+                .foregroundStyle(Warm.brand)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(L.tapSkillsHint)
+                .font(WarmFont.caption)
+                .foregroundStyle(Warm.muted)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 4)
     }
 
     // MARK: - Stats

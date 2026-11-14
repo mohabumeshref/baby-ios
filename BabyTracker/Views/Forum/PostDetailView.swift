@@ -462,17 +462,30 @@ final class PostDetailModel: ObservableObject {
     private var listener: ListenerRegistration?
     private let store = ForumStore.shared
 
+    /// Attaches the answers listener, and on the first call loads the post.
+    ///
+    /// `.task` is cancelled when the screen disappears and run again when it
+    /// comes back, and `onDisappear` tears the listener down - so this has to
+    /// be safe to call repeatedly. It keys off `listener`, not `postId`:
+    /// guarding on `postId` meant that after the first disappear (the keyboard,
+    /// the photo picker, a push to a profile or a full-screen image) the
+    /// listener was removed and never re-attached, so comments posted
+    /// afterwards did not show until the screen was popped and reopened.
     func start(postId: String) async {
-        guard self.postId == nil else { return }
+        let isFirstStart = self.postId == nil
         self.postId = postId
-        isLoading = true
 
-        // Answers stream live so a reply arriving while the screen is open
-        // appears without a manual refresh.
-        listener = store.observeAnswers(postId: postId) { [weak self] answers in
-            Task { @MainActor in self?.answers = answers }
+        if listener == nil {
+            // Answers stream live so a reply arriving while the screen is
+            // open appears without a manual refresh.
+            listener = store.observeAnswers(postId: postId) { [weak self] answers in
+                Task { @MainActor in self?.answers = answers }
+            }
         }
 
+        guard isFirstStart else { return }
+
+        isLoading = true
         await reloadPost()
         try? await store.incrementViews(postId: postId)
         isLoading = false

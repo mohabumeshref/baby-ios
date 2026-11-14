@@ -271,19 +271,25 @@ final class VaccineStore: ObservableObject {
 
     // MARK: - Home summary
 
-    /// Subtitle for the home card: the earliest overdue dose, else the count.
+    /// Subtitle for the home card: always the soonest dose still to be given,
+    /// whether it is already due or still ahead. Showing only overdue doses
+    /// left the card blank-looking for an up-to-date baby, which is the common
+    /// case and the one where the next date is most useful.
     func summary(babyMonths: Double) -> String {
         guard totalCount > 0 else { return L.vaxCardHint }
 
-        let overdue = rows
-            .filter { isDue($0, babyMonths: babyMonths) }
+        let counts = "\(String.number(completedCount))/\(String.number(totalCount))"
+
+        // Earliest by scheduled age, over the overlay-applied rows, so a
+        // removed dose is skipped and an added one takes part.
+        let next = rows
+            .filter { !isTaken($0) }
             .min { $0.ageMonths < $1.ageMonths }
 
-        if let overdue {
-            let counts = "\(String.number(completedCount))/\(String.number(totalCount))"
-            return "\(L.vaxDueNow): \(overdue.nameAr)  •  \(counts)"
-        }
-        return L.vaxProgress(done: completedCount, total: totalCount)
+        guard let next else { return "\(L.vaxAllDone)  •  \(counts)" }
+
+        let label = next.ageMonths <= babyMonths ? L.vaxDueLabel : L.vaxNextDose
+        return "\(label): \(next.nameAr)  •  \(counts)"
     }
 
     // MARK: - Internals

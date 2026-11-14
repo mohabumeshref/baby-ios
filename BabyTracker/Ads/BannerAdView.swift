@@ -14,12 +14,17 @@ import SwiftUI
 import GoogleMobileAds
 
 struct BannerAdView: View {
+    /// Width to size the adaptive banner for. Defaults to the full screen,
+    /// which is what the edge-to-edge placements want; a view that insets its
+    /// content passes its own content width so the banner lines up with the
+    /// cards around it instead of overflowing them.
+    var width: CGFloat = UIScreen.main.bounds.width
+
     @State private var isLoaded = false
     @State private var isEnabled = true
 
     private var adSize: GADAdSize {
-        let width = UIScreen.main.bounds.width
-        return GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(width)
+        GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(width)
     }
 
     var body: some View {
@@ -66,7 +71,13 @@ private struct BannerRepresentable: UIViewRepresentable {
         return view
     }
 
-    func updateUIView(_ uiView: GADBannerView, context: Context) {}
+    func updateUIView(_ uiView: GADBannerView, context: Context) {
+        // Rotation changes the adaptive width; without this the view keeps
+        // the size it was created with.
+        if uiView.adSize.size.width != adSize.size.width {
+            uiView.adSize = adSize
+        }
+    }
 
     func makeCoordinator() -> Coordinator { Coordinator(isLoaded: $isLoaded) }
 

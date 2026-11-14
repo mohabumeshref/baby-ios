@@ -26,10 +26,18 @@
 	<string>أنا و طفلي</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>ar</string>
+	<!-- Arabic only, deliberately. The bundle's localization list is what
+	     iOS resolves the app language from, so listing `en` here made an
+	     English device run the app in English - English chrome wrapped
+	     around Arabic articles, milestones and vaccine names, laid out
+	     left to right. With `ar` alone every device resolves to Arabic,
+	     which also gives correct RTL nav bars, back buttons and alert
+	     button order for free. The English values in Strings.swift are
+	     kept for a future English release; they are simply unreachable
+	     until `en` comes back here and en.lproj returns. -->
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>ar</string>
-		<string>en</string>
 	</array>
 
 	<!-- AdMob App ID for this app. Same publisher account as the pregnancy

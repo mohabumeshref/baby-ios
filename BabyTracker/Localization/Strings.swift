@@ -18,6 +18,12 @@ import Foundation
 enum L {
 
     /// Two-letter code of the language the app is actually running in.
+    ///
+    /// The bundle ships Arabic alone (see CFBundleLocalizations in
+    /// Info.plist), so iOS resolves every device to `ar` and this is `"ar"`
+    /// in practice. It still reads the resolved language rather than
+    /// returning a constant, so adding `en` back to the bundle is all an
+    /// English release needs.
     static var langCode: String {
         String(Locale.preferredLanguages.first?.prefix(2) ?? "ar")
     }
@@ -51,6 +57,14 @@ enum L {
 
     // MARK: - Home
 
+    /// Sits under the skills section heading, telling the parent the chips
+    /// are tappable. Addressed to the mother, like the Android copy.
+    static var tapSkillsHint: String {
+        localized(
+            ar: "اضغطي على المهارات التي يتقنها طفلكِ",
+            en: "Tap the skills your baby has mastered"
+        )
+    }
     static var thisMonthsSkills: String {
         localized(ar: "مهارات هذا الشهر", en: "This month's skills")
     }
@@ -291,6 +305,15 @@ enum L {
     }
 
     static var vaxDueNow: String { localized(ar: "حان موعده", en: "Due now") }
+    /// Home-card prefix before a vaccine name ("حان موعد: اسم"), where the row
+    /// subtitle above stands alone and so carries the pronoun.
+    static var vaxDueLabel: String { localized(ar: "حان موعد", en: "Due") }
+    static var vaxNextDose: String {
+        localized(ar: "التطعيم القادم", en: "Next vaccine")
+    }
+    static var vaxAllDone: String {
+        localized(ar: "اكتملت التطعيمات", en: "All vaccines done")
+    }
     static var vaxCustomRow: String { localized(ar: "مخصص", en: "Custom") }
     static var vaxAdd: String { localized(ar: "إضافة مطعوم", en: "Add a vaccine") }
     static var vaxEditVaccine: String {

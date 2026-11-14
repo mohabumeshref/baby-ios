@@ -26,6 +26,8 @@ enum WarmFont {
     /// Screen title, e.g. the baby's age headline.
     static let display = Font.custom(Face.bold, size: 28, relativeTo: .largeTitle)
     static let title = Font.custom(Face.bold, size: 22, relativeTo: .title2)
+    /// Section heading on a screen, e.g. the skills section on home.
+    static let sectionHeading = Font.custom(Face.bold, size: 18, relativeTo: .headline)
     /// Card headings, tier titles.
     static let heading = Font.custom(Face.semibold, size: 17, relativeTo: .headline)
     /// Article section headings.
