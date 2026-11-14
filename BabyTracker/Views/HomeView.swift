@@ -10,11 +10,16 @@
 //
 
 import SwiftUI
+import Combine
 
 struct HomeView: View {
     @EnvironmentObject private var profile: BabyProfile
 
     @EnvironmentObject private var vaccines: VaccineStore
+    @EnvironmentObject private var router: NotificationRouter
+
+    /// Driven so a tapped vaccine reminder can push the schedule.
+    @State private var path: [VaccinesRoute] = []
 
     private let content = ContentStore.shared
 
@@ -27,7 +32,7 @@ struct HomeView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             scrollContent
                 .warmBackground()
                 .navigationBarTitleDisplayMode(.inline)
@@ -35,6 +40,13 @@ struct HomeView: View {
                     VaccinesView()
                 }
                 .task { await vaccines.refineCountryFromIP() }
+        }
+        // Only consumed when it IS a vaccine reminder - a forum push belongs
+        // to the community tab, and taking it here would swallow it.
+        .onReceive(router.$pending) { pending in
+            guard pending == .vaccines else { return }
+            _ = router.consume()
+            if path.isEmpty { path = [VaccinesRoute()] }
         }
     }
 

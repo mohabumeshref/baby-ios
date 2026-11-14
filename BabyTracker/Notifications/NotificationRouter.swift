@@ -24,8 +24,18 @@ import SwiftUI
 /// A destination derived from a notification payload.
 enum NotificationDestination: Equatable {
     case post(id: String, imageUrl: String?)
+    /// A local vaccine reminder. Carries nothing - the schedule screen reads
+    /// current state for itself, and by the time a reminder is tapped that
+    /// state may well have moved on.
+    case vaccines
 
     init?(userInfo: [AnyHashable: Any]) {
+        // Checked first: a local reminder has no post_id, and the guard below
+        // would reject it.
+        if userInfo[VaccineReminderPayload.key] != nil {
+            self = .vaccines
+            return
+        }
         guard let postId = userInfo["post_id"] as? String, !postId.isEmpty else {
             return nil
         }

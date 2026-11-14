@@ -214,6 +214,9 @@ struct OnboardingView: View {
             // than an unexplained prompt on a cold first run.
             await notifications.requestAuthorizationIfNeeded()
             await notifications.scheduleWeeklyReminder(birthDate: birthDate)
+            // The country was chosen in step 2 and the date in step 3, so the
+            // schedule is fully known the moment this runs.
+            await VaccineReminders.reschedule(store: vaccines, birthDate: birthDate)
         }
         if isRevisiting { dismiss() }
     }

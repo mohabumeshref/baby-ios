@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct RootView: View {
     @EnvironmentObject private var profile: BabyProfile
@@ -40,6 +41,7 @@ struct RootView: View {
 /// without any work.
 struct MainTabView: View {
     @State private var selection = ScreenshotSeed.tab ?? 0
+    @EnvironmentObject private var router: NotificationRouter
 
     var body: some View {
         TabView(selection: $selection) {
@@ -62,5 +64,13 @@ struct MainTabView: View {
                 }
         }
         .tint(Warm.brand)
+        // The schedule is pushed from Home, so a tapped reminder has to bring
+        // that tab forward first. `onReceive` rather than `onChange`: HomeView
+        // subscribes to the same publisher and clears the value, and every
+        // subscriber of one send sees the value it was sent.
+        .onReceive(router.$pending) { pending in
+            guard pending == .vaccines else { return }
+            selection = 0
+        }
     }
 }

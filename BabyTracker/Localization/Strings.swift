@@ -325,6 +325,24 @@ enum L {
     }
 
     static var vaxDueNow: String { localized(ar: "حان موعده", en: "Due now") }
+
+    // MARK: - Vaccine reminders
+
+    static var vaxReminderTitle: String {
+        localized(ar: "تذكير تطعيم", en: "Vaccine reminder")
+    }
+    static func vaxReminderToday(_ name: String) -> String {
+        localized(
+            ar: "اليوم موعد تطعيم \(name)",
+            en: "\(name) is due today"
+        )
+    }
+    static func vaxReminderSoon(_ name: String) -> String {
+        localized(
+            ar: "اقترب موعد تطعيم \(name) (خلال أيام)",
+            en: "\(name) is due in a few days"
+        )
+    }
     /// Home-card prefix before a vaccine name ("حان موعد: اسم"), where the row
     /// subtitle above stands alone and so carries the pronoun.
     static var vaxDueLabel: String { localized(ar: "حان موعد", en: "Due") }

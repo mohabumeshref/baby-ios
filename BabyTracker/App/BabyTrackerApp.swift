@@ -47,6 +47,25 @@ struct BabyTrackerApp: App {
                     }
                     await notifications.refreshAuthorizationStatus()
                     await RemoteConfigGate.shared.prefetch()
+                    await VaccineReminders.reschedule(
+                        store: vaccines, birthDate: profile.birthDate
+                    )
+                }
+                // Any vaccine write bumps `revision`, including a country
+                // switch and every overlay change, so one observer here covers
+                // ticking a dose, re-dating it, and adding, editing or
+                // removing a custom vaccine - wherever in the app it happened.
+                .onChange(of: vaccines.revision) { _ in
+                    Task {
+                        await VaccineReminders.reschedule(
+                            store: vaccines, birthDate: profile.birthDate
+                        )
+                    }
+                }
+                .onChange(of: profile.birthDate) { date in
+                    Task {
+                        await VaccineReminders.reschedule(store: vaccines, birthDate: date)
+                    }
                 }
                 .onChange(of: scenePhase) { phase in
                     guard phase == .active else { return }
@@ -57,6 +76,11 @@ struct BabyTrackerApp: App {
                         // foreground keeps this app in contention for the slot.
                         await notifications.syncFCMToken()
                         await notifications.refreshWeeklyReminder(birthDate: profile.birthDate)
+                        // Dates move while the app is backgrounded: yesterday's
+                        // "in 3 days" is today's "due today".
+                        await VaccineReminders.reschedule(
+                            store: vaccines, birthDate: profile.birthDate
+                        )
                     }
                 }
         }
