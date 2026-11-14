@@ -88,10 +88,4 @@ extension VaccineData {
             return VaccineData(countries: [], schedules: [:], defaultSchedule: [])
         }
     }()
-
-    init(countries: [Country], schedules: [String: [Vaccine]], defaultSchedule: [Vaccine]) {
-        self.countries = countries
-        self.schedules = schedules
-        self.defaultSchedule = defaultSchedule
-    }
 }
