@@ -53,7 +53,9 @@ final class ContentStore {
     /// Prefers a language variant ("weeks_en.json") when the app isn't running
     /// in Arabic, falling back to the Arabic base file.
     private static func localizedResourceURL(_ name: String, ext: String = "json") -> URL? {
-        let lang = Locale.preferredLanguages.first?.prefix(2) ?? "ar"
+        // Same source of truth as the UI strings, so content and chrome can
+        // never disagree about which language the app is in.
+        let lang = L.langCode
         if lang != "ar",
            let localized = Bundle.main.url(forResource: "\(name)_\(lang)", withExtension: ext) {
             return localized

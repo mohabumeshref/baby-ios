@@ -36,6 +36,9 @@ struct BabyTrackerApp: App {
                 // mode produces something that reads as a different product,
                 // so the colour scheme is pinned rather than duplicated.
                 .preferredColorScheme(.light)
+                // Arabic is the only language the app ships in, so the whole
+                // tree is pinned RTL rather than left to follow the device.
+                .modifier(PinnedLayoutDirection())
                 .task {
                     auth.start()
                     // DEBUG-only, screenshot job only. Compiles away in Release.
@@ -57,5 +60,22 @@ struct BabyTrackerApp: App {
                     }
                 }
         }
+    }
+}
+
+/// Pins layout direction to `L.forcedLayoutDirection` while the app is
+/// single-language, and steps out of the way once that is nil.
+///
+/// Deliberately NOT `UIView.appearance().semanticContentAttribute`: that
+/// mirrors every UIKit view in the process, including the date-picker wheels
+/// that are pinned LTR on purpose and the ad banners, whose contents are not
+/// ours to flip.
+private struct PinnedLayoutDirection: ViewModifier {
+    @Environment(\.layoutDirection) private var systemDirection
+
+    func body(content: Content) -> some View {
+        content.environment(
+            \.layoutDirection, L.forcedLayoutDirection ?? systemDirection
+        )
     }
 }

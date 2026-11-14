@@ -14,21 +14,41 @@
 //
 
 import Foundation
+import SwiftUI
 
 enum L {
 
-    /// Two-letter code of the language the app is actually running in.
+    /// The one language the app ships in.
     ///
-    /// The bundle ships Arabic alone (see CFBundleLocalizations in
-    /// Info.plist), so iOS resolves every device to `ar` and this is `"ar"`
-    /// in practice. It still reads the resolved language rather than
-    /// returning a constant, so adding `en` back to the bundle is all an
-    /// English release needs.
+    /// Set this to nil to go back to following the device, which is what an
+    /// English release will want. Until then the app is Arabic on every
+    /// device, because its CONTENT is: the weeks, the milestones and the
+    /// vaccine names are Arabic only, so English chrome around them read as
+    /// a half-translated app rather than an English one.
+    ///
+    /// Why a constant and not the bundle: `CFBundleLocalizations` lists `ar`
+    /// alone, but `Locale.preferredLanguages` reports the DEVICE's language
+    /// list, not the app's resolved localization - so on an English phone it
+    /// still answers "en" and every label came out English. Only
+    /// `Bundle.main.preferredLocalizations` is the intersection, and pinning
+    /// the value is clearer than relying on that distinction.
+    static let forcedLanguage: String? = "ar"
+
+    /// Two-letter code of the language the app is running in.
     static var langCode: String {
-        String(Locale.preferredLanguages.first?.prefix(2) ?? "ar")
+        forcedLanguage
+            ?? String(Locale.preferredLanguages.first?.prefix(2) ?? "ar")
     }
 
     static var isArabic: Bool { langCode == "ar" }
+
+    /// Layout direction to pin the whole app to, for as long as it is
+    /// single-language. Nil once `forcedLanguage` is nil, so SwiftUI goes back
+    /// to deciding for itself.
+    static var forcedLayoutDirection: LayoutDirection? {
+        guard let forcedLanguage else { return nil }
+        return forcedLanguage == "ar" ? .rightToLeft : .leftToRight
+    }
 
     private static func localized(ar: String, en: String) -> String {
         isArabic ? ar : en
