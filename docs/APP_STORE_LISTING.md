@@ -214,10 +214,9 @@ A demo account Apple cannot log into is a rejection.
 **Review notes** — paste this:
 
 ```
-This is an Arabic-language app and lays out right-to-left. All content is in
-Arabic. (The interface strings also have English translations for Arabic
-speakers whose device is set to English, but the app is not marketed in
-English.)
+This is an Arabic-language app and lays out right-to-left. It runs in Arabic
+on every device regardless of the device language, because all of its content
+- the week-by-week guide, the milestones and the vaccine names - is Arabic.
 
 Milestones and week-by-week content work with no account. Only the Community
 tab requires sign-in — please use the demo account provided.
@@ -234,6 +233,17 @@ is why an existing account from that app signs in here.
 
 The app shows ads and asks for App Tracking Transparency permission. Declining
 tracking does not restrict any feature.
+
+Vaccine schedules (Guideline 1.4.1 - data sources): the per-country childhood
+schedules are compiled from the national immunisation programmes of each
+country - Saudi MoH, UAE ADPHC, Germany STIKO, Syria via ACU/WHO-EMRO - and
+from the WHO Immunization Data Portal 2025 for the rest; countries without a
+national entry display the WHO default schedule. The sources are printed at
+the bottom of the vaccine screen inside the app, together with a statement
+that the dates are guidance only, are not a substitute for a doctor, and that
+the local health ministry's schedule prevails. The app records what the parent
+marks as given; it makes no diagnosis, gives no dosage and no treatment
+recommendation.
 ```
 
 ---

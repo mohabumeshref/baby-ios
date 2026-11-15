@@ -123,6 +123,15 @@ final class VaccineStore: ObservableObject {
     var countries: [VaccineData.Country] { data.countries }
     var countryName: String { data.countryName(countryIso) }
 
+    /// Attribution for the bundled schedules, verbatim from the data file.
+    var sourceText: String? {
+        data.meta?.source?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// True when this country has no schedule of its own and is reading the
+    /// WHO default.
+    var usesDefaultSchedule: Bool { !data.hasOwnSchedule(countryIso) }
+
     // MARK: - Country
 
     /// An explicit pick is authoritative from here on.

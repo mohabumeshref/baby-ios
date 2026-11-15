@@ -326,6 +326,23 @@ enum L {
 
     static var vaxDueNow: String { localized(ar: "حان موعده", en: "Due now") }
 
+    /// Shown under the schedule, with the source line from the data file.
+    static var vaxSourcesTitle: String {
+        localized(ar: "المصادر", en: "Sources")
+    }
+    static var vaxDisclaimer: String {
+        localized(
+            ar: "هذه المواعيد للاسترشاد فقط وليست بديلاً عن استشارة الطبيب. عند أي اختلاف، اعتمدي جدول وزارة الصحة في بلدكِ.",
+            en: "These dates are for guidance only and are not a substitute for your doctor. Where they differ, follow your country's health ministry schedule."
+        )
+    }
+    static var vaxDefaultScheduleNote: String {
+        localized(
+            ar: "لا يوجد جدول خاص بهذه الدولة، لذلك يُعرض جدول منظمة الصحة العالمية.",
+            en: "This country has no schedule of its own, so the WHO default is shown."
+        )
+    }
+
     // MARK: - Vaccine reminders
 
     static var vaxReminderTitle: String {

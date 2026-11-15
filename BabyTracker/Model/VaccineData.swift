@@ -16,11 +16,23 @@ struct VaccineData: Decodable, Sendable {
     let countries: [Country]
     let schedules: [String: [Vaccine]]
     let defaultSchedule: [Vaccine]
+    /// Optional so a data file without the block still decodes.
+    let meta: Meta?
 
     private enum CodingKeys: String, CodingKey {
-        case countries, schedules
+        case countries, schedules, meta
         // `default` is a Swift keyword, so it cannot be a property name.
         case defaultSchedule = "default"
+    }
+
+    /// Where the schedules come from. App Review guideline 1.4.1 asks a health
+    /// app to disclose its data sources, and the parent deserves to know whose
+    /// schedule she is reading - so this is shown in the app rather than kept
+    /// in the data file.
+    struct Meta: Decodable, Sendable {
+        let source: String?
+        let scope: String?
+        let note: String?
     }
 
     struct Country: Decodable, Identifiable, Hashable, Sendable {
@@ -64,6 +76,12 @@ struct VaccineData: Decodable, Sendable {
         countries.first { $0.iso == iso }?.nameAr ?? iso
     }
 
+    /// False when the country falls back to the WHO default, which is worth
+    /// saying out loud on screen.
+    func hasOwnSchedule(_ iso: String) -> Bool {
+        !(schedules[iso]?.isEmpty ?? true)
+    }
+
     func contains(_ iso: String?) -> Bool {
         guard let iso else { return false }
         return countries.contains { $0.iso == iso }
@@ -79,13 +97,13 @@ extension VaccineData {
     static let bundled: VaccineData = {
         guard let url = Bundle.main.url(forResource: "vaccines", withExtension: "json") else {
             assertionFailure("missing bundled resource vaccines.json")
-            return VaccineData(countries: [], schedules: [:], defaultSchedule: [])
+            return VaccineData(countries: [], schedules: [:], defaultSchedule: [], meta: nil)
         }
         do {
             return try JSONDecoder().decode(VaccineData.self, from: Data(contentsOf: url))
         } catch {
             assertionFailure("failed to decode vaccines.json: \(error)")
-            return VaccineData(countries: [], schedules: [:], defaultSchedule: [])
+            return VaccineData(countries: [], schedules: [:], defaultSchedule: [], meta: nil)
         }
     }()
 }

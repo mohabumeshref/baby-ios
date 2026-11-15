@@ -39,6 +39,7 @@ struct VaccinesView: View {
                 ForEach(vaccines.groups) { group in
                     groupCard(group.label, group.rows)
                 }
+                sources
             }
             .padding(.horizontal, WarmMetrics.screenPadding)
             .padding(.vertical, 16)
@@ -107,6 +108,45 @@ struct VaccinesView: View {
             .foregroundStyle(Warm.muted)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Sources
+
+    /// Who says so, and what this screen is not.
+    ///
+    /// The source line is printed from the data file rather than typed here,
+    /// so refreshing the schedules updates the attribution with them and
+    /// neither can drift from the other.
+    private var sources: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L.vaxSourcesTitle)
+                .font(WarmFont.eyebrow)
+                .foregroundStyle(Warm.eyebrow)
+
+            if let source = vaccines.sourceText, !source.isEmpty {
+                Text(source)
+                    .font(WarmFont.caption)
+                    .foregroundStyle(Warm.muted)
+                    // Latin organisation names, so they are not mirrored into
+                    // the Arabic reading order.
+                    .environment(\.layoutDirection, .leftToRight)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if vaccines.usesDefaultSchedule {
+                Text(L.vaxDefaultScheduleNote)
+                    .font(WarmFont.caption)
+                    .foregroundStyle(Warm.muted)
+            }
+
+            Text(L.vaxDisclaimer)
+                .font(WarmFont.caption)
+                .foregroundStyle(Warm.mutedSub)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 6)
+        .padding(.bottom, 4)
     }
 
     // MARK: - Groups
