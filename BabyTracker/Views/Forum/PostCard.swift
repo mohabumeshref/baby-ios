@@ -159,6 +159,14 @@ struct PostCard: View {
     /// Two pills splitting the card's width 50/50.
     private var stats: some View {
         HStack(spacing: 10) {
+            statPill(
+                systemName: "bubble.right",
+                iconSize: 23,
+                value: post.answers,
+                tint: Warm.mutedChip
+            )
+            .frame(maxWidth: .infinity)
+
             Button(action: onLike) {
                 statPill(
                     systemName: isLiked ? "heart.fill" : "heart",
@@ -168,14 +176,6 @@ struct PostCard: View {
                 )
             }
             .buttonStyle(.plain)
-            .frame(maxWidth: .infinity)
-
-            statPill(
-                systemName: "bubble.right",
-                iconSize: 23,
-                value: post.answers,
-                tint: Warm.mutedChip
-            )
             .frame(maxWidth: .infinity)
         }
     }

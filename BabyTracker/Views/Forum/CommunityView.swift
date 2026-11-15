@@ -29,12 +29,30 @@ struct CommunityView: View {
     /// one of them.
     @State private var path = NavigationPath()
 
+    /// The account menu is a sheet, not a `Menu`: a Menu renders as a UIMenu,
+    /// whose items always use the system font.
+    @State private var showAccountMenu = false
+    /// Run after the sheet has gone, not while it is closing - pushing onto
+    /// the navigation stack mid-dismissal drops the push.
+    @State private var pendingAccountAction: AccountAction?
+
+    enum AccountAction {
+        case myPosts
+        case signOut
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             gatedContent
                 .navigationTitle(L.community)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { toolbarContent }
+                .sheet(isPresented: $showAccountMenu, onDismiss: runPendingAccountAction) {
+                    AccountMenuSheet { action in
+                        pendingAccountAction = action
+                        showAccountMenu = false
+                    }
+                }
                 .navigationDestination(for: String.self) { PostDetailView(postId: $0) }
                 .navigationDestination(for: ProfileRoute.self) { route in
                     ProfileView(
@@ -92,27 +110,28 @@ struct CommunityView: View {
             // Own profile / my posts / sign out. Without this there is no
             // route to your own profile at all.
             ToolbarItem(placement: .cancellationAction) {
-                Menu {
-                    Button {
-                        guard let uid = auth.uid else { return }
-                        path.append(ProfileRoute(
-                            uid: uid,
-                            name: auth.profile?.name,
-                            image: auth.profile?.image_url
-                        ))
-                    } label: {
-                        Label(L.myPosts, systemImage: "person.crop.circle")
-                    }
-                    Button(role: .destructive) {
-                        try? auth.signOut()
-                    } label: {
-                        Label(L.signOut, systemImage: "rectangle.portrait.and.arrow.right")
-                    }
-                } label: {
+                Button { showAccountMenu = true } label: {
                     Image(systemName: "person.crop.circle")
                 }
                 .tint(Warm.brand)
             }
+        }
+    }
+
+    private func runPendingAccountAction() {
+        guard let action = pendingAccountAction else { return }
+        pendingAccountAction = nil
+
+        switch action {
+        case .myPosts:
+            guard let uid = auth.uid else { return }
+            path.append(ProfileRoute(
+                uid: uid,
+                name: auth.profile?.name,
+                image: auth.profile?.image_url
+            ))
+        case .signOut:
+            try? auth.signOut()
         }
     }
 
@@ -281,5 +300,58 @@ private struct CommunityDialogs: ViewModifier {
                 }
                 Button(L.cancel, role: .cancel) { postPendingReport = nil }
             }
+    }
+}
+
+// MARK: - Account menu
+
+/// The two account actions, in the app's own typeface.
+private struct AccountMenuSheet: View {
+    let onSelect: (CommunityView.AccountAction) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            row(
+                L.myPosts,
+                systemImage: "person.crop.circle",
+                tint: Warm.ink
+            ) { onSelect(.myPosts) }
+
+            Divider().padding(.horizontal, WarmMetrics.screenPadding)
+
+            row(
+                L.signOut,
+                systemImage: "rectangle.portrait.and.arrow.right",
+                tint: Warm.brandDeep
+            ) { onSelect(.signOut) }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 10)
+        .warmBackground()
+        .presentationDetents([.height(160)])
+    }
+
+    private func row(
+        _ title: String,
+        systemImage: String,
+        tint: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 17))
+                    .frame(width: 24)
+                Text(title)
+                    .font(WarmFont.body)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(tint)
+            .padding(.horizontal, WarmMetrics.screenPadding)
+            .frame(minHeight: 52)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

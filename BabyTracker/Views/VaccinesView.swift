@@ -35,10 +35,10 @@ struct VaccinesView: View {
             VStack(spacing: 14) {
                 header
                 addButton
+                hint
                 ForEach(vaccines.groups) { group in
                     groupCard(group.label, group.rows)
                 }
-                hint
             }
             .padding(.horizontal, WarmMetrics.screenPadding)
             .padding(.vertical, 16)
@@ -107,7 +107,6 @@ struct VaccinesView: View {
             .foregroundStyle(Warm.muted)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
-            .padding(.top, 4)
     }
 
     // MARK: - Groups

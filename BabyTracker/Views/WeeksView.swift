@@ -49,6 +49,14 @@ struct WeeksView: View {
                             blocks: week.babyGrowth
                         )
 
+                        // Between the baby's section and the mother's, at
+                        // card width - a full-bleed banner pinned to the
+                        // bottom read as part of the app's own chrome.
+                        BannerAdView(
+                            width: UIScreen.main.bounds.width
+                                - WarmMetrics.screenPadding * 2
+                        )
+
                         if !week.parentBody.isEmpty {
                             articleSection(
                                 .parentBody,
@@ -69,12 +77,6 @@ struct WeeksView: View {
             }
         }
         .warmBackground()
-        .safeAreaInset(edge: .bottom) {
-            // Pinned below the reader rather than inline, so it never lands in
-            // the middle of an article the parent is reading. Same placement as
-            // the Android app and pt-ios.
-            BannerAdView()
-        }
         .onAppear {
             if let currentIndex { selectedIndex = currentIndex }
         }

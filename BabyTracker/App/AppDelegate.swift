@@ -26,6 +26,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate, MessagingDelegate,
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // Cairo on the navigation bars and the tab bar. Must run before the
+        // first window, because the appearance proxies only affect views
+        // created after they are set.
+        WarmAppearance.apply()
+
         // The Mobile Ads SDK is independent of Firebase - it reads
         // GADApplicationIdentifier from Info.plist - so it starts either way.
         // Starting the SDK does not request an ad; nothing is requested until
