@@ -38,8 +38,15 @@ line is: تابعي مهارات طفلك شهراً بشهر، واقرئي ع�
 جديد: جدول تطعيمات طفلك حسب دولتك مع تذكير قبل كل موعد. تابعي مهاراته شهراً بشهر، ونموه أسبوعاً بأسبوع، وشاركي تجربتك مع أمهات أخريات.
 ```
 
-**What's New in This Version** (4000 max — required on every new version;
-this is the 1.1 vaccines release)
+**What's New in This Version** (4000 max — required on every new version)
+
+1.2, the banner layout fix:
+
+```
+إصلاح مشكلة في عرض بعض العناصر عند فتح التطبيق.
+```
+
+1.1, the vaccines release:
 
 ```
 جديد في هذا الإصدار:

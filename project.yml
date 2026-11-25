@@ -23,7 +23,7 @@ settings:
     # profile, and the iOS app registered in the Firebase project.
     PRODUCT_BUNDLE_IDENTIFIER: com.wecare.arabicbaby
     DEVELOPMENT_TEAM: 78CLZ67RBG   # same team as pt-ios; confirm
-    MARKETING_VERSION: "1.1"
+    MARKETING_VERSION: "1.2"
     CURRENT_PROJECT_VERSION: "1"   # testflight.yml overwrites via agvtool
     # agvtool requires apple-generic versioning; without it `agvtool
     # new-version` reports success but changes nothing, and every TestFlight

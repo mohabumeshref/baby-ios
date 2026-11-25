@@ -235,12 +235,22 @@ jobs:
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" \
             > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8
 
+          # altool exits 0 even when the upload is rejected - a closed
+          # version train came back as "UPLOAD FAILED with 2 errors" on a
+          # green run. The log is the only reliable signal, so it is checked.
+          set -o pipefail
           xcrun altool --upload-app \
             --type ios \
             --file "$RUNNER_TEMP/export/BabyTracker.ipa" \
             --apiKey "$APP_STORE_CONNECT_KEY_ID" \
             --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
-            --verbose
+            --verbose 2>&1 | tee "$RUNNER_TEMP/altool.log"
+
+          if ! grep -q "UPLOAD SUCCEEDED" "$RUNNER_TEMP/altool.log"; then
+            grep -E "ERROR: \[altool" "$RUNNER_TEMP/altool.log" | tail -5 || true
+            echo "::error::Upload did not report success - the build is not on TestFlight."
+            exit 1
+          fi
 
       # ── Cleanup ──────────────────────────────────────────────────────────
 
