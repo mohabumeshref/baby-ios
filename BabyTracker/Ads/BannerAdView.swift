@@ -23,15 +23,24 @@ struct BannerAdView: View {
     @State private var isLoaded = false
     @State private var isEnabled = true
 
+    /// Portrait-anchored, not current-orientation-anchored: the app is
+    /// portrait only, and the current-orientation variant reads the interface
+    /// orientation, which is still unresolved during launch - it answered for
+    /// an unknown orientation and the banner came back the wrong width.
     private var adSize: GADAdSize {
-        GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(width)
+        GADPortraitAnchoredAdaptiveBannerAdSizeWithWidth(width)
     }
 
     var body: some View {
         Group {
             if isEnabled {
                 BannerRepresentable(adSize: adSize, isLoaded: $isLoaded)
-                    .frame(height: adSize.size.height)
+                    // Both dimensions, because this sits in a VStack inside a
+                    // ScrollView: an unconstrained width lets the banner's own
+                    // intrinsic size widen the stack, which stretches every
+                    // card beside it until the ad's size settles.
+                    .frame(width: width, height: adSize.size.height)
+                    .clipped()
                     // Keep the slot reserved but blank until fill arrives, so
                     // content doesn't shift under the reader mid-sentence.
                     .opacity(isLoaded ? 1 : 0)
@@ -77,6 +86,16 @@ private struct BannerRepresentable: UIViewRepresentable {
         if uiView.adSize.size.width != adSize.size.width {
             uiView.adSize = adSize
         }
+    }
+
+    /// Answers with the requested size instead of letting SwiftUI measure the
+    /// GADBannerView, whose intrinsic size changes as the ad loads.
+    func sizeThatFits(
+        _ proposal: ProposedViewSize,
+        uiView: GADBannerView,
+        context: Context
+    ) -> CGSize? {
+        adSize.size
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(isLoaded: $isLoaded) }
