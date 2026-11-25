@@ -1,0 +1,13 @@
+# app-ads.txt for أنا و طفلي / My Baby & I (iOS)
+#
+# AdMob crawls this file at the developer website on the App Store listing,
+# which for this app is baby-ar-ios.web.app - a different Firebase Hosting
+# site from pt-ar-ios.web.app, so PT's file does not verify this app.
+#
+# Only direct AdMob demand is listed because the app has no mediation
+# adapters linked. Adding a network means adding its line here too.
+
+OWNERDOMAIN=baby-ar-ios.web.app
+
+# Direct
+google.com, pub-6789336355455489, DIRECT, f08c47fec0942fa0

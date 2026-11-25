@@ -30,8 +30,34 @@ still has to happen before Submit.
 
 **Promotional text** (170 max — editable without a new build)
 
+This field is the one place to lead with whatever shipped last, so it names the
+vaccine schedule and its reminders. When that stops being new, the evergreen
+line is: تابعي مهارات طفلك شهراً بشهر، واقرئي عن تطوره أسبوعاً بأسبوع، وشاركي تجربتك مع أمهات أخريات في مجتمع أنا و طفلي.
+
 ```
-تابعي مهارات طفلك شهراً بشهر، واقرئي عن تطوره أسبوعاً بأسبوع، وشاركي تجربتك مع أمهات أخريات في مجتمع أنا و طفلي.
+جديد: جدول تطعيمات طفلك حسب دولتك مع تذكير قبل كل موعد. تابعي مهاراته شهراً بشهر، ونموه أسبوعاً بأسبوع، وشاركي تجربتك مع أمهات أخريات.
+```
+
+**What's New in This Version** (4000 max — required on every new version;
+this is the 1.1 vaccines release)
+
+```
+جديد في هذا الإصدار:
+
+• جدول التطعيمات
+جدول تطعيمات طفلك حسب دولتك، مع تسجيل تاريخ كل جرعة، وإمكانية تعديل الجدول أو إضافة مطعوم آخر.
+
+• تذكير قبل كل موعد
+إشعار قبل الموعد بثلاثة أيام، وإشعار في يومه، لكل جرعة لم تُسجَّل بعد.
+
+• مصادر الجدول
+شاشة التطعيمات تذكر الجهات التي أُخذت منها المواعيد.
+
+• تحسينات
+- بطاقة في الشاشة الرئيسية تعرض التطعيم القادم وموعده.
+- التطبيق الآن بالعربية على كل الأجهزة، حتى إن كانت لغة الهاتف الإنجليزية.
+- تصحيح الخطوط وترتيب العناصر في عدة شاشات.
+- إصلاح عدم ظهور التعليقات الجديدة أحياناً في المجتمع.
 ```
 
 **Description**
@@ -40,26 +66,23 @@ still has to happen before Submit.
 أنا و طفلي هو رفيقك في السنة الأولى من عمر طفلك.
 
 • مهارات كل شهر
-تعرّفي على ما يستطيع طفلك فعله في شهره الحالي، مقسّمة إلى ثلاث مجموعات:
-مهارات أتقنها معظم الأطفال، مهارات بارزة يقوم بها نصفهم، ومهارات متطوّرة.
-علّمي كل مهارة يتقنها طفلك وتابعي تقدّمه بنظرة واحدة.
+تعرّفي على ما يستطيع طفلك فعله في شهره الحالي، مقسّمة إلى ثلاث مجموعات: مهارات أتقنها معظم الأطفال، مهارات بارزة يقوم بها نصفهم، ومهارات متطوّرة. علّمي كل مهارة يتقنها طفلك وتابعي تقدّمه بنظرة واحدة.
+
+• جدول التطعيمات مع تذكير
+جدول تطعيمات طفلك حسب دولتك، تسجّلين فيه تاريخ كل جرعة، ويمكنك تعديل الجدول أو إضافة مطعوم آخر. ويصلك إشعار قبل كل موعد بثلاثة أيام وإشعار في يومه، وتجدين في الشاشة الرئيسية التطعيم القادم وموعده. وتذكر شاشة التطعيمات الجهات التي أُخذت منها المواعيد.
 
 • أسبوعاً بأسبوع
-محتوى مفصّل عن نمو طفلك وتطوره خلال السنة الأولى: كيف ينمو، ما الذي يتغيّر،
-وكيف يمكنك دعمه — مع تحديد أسبوعك الحالي تلقائياً من تاريخ الميلاد.
+محتوى مفصّل عن نمو طفلك وتطوره خلال السنة الأولى: كيف ينمو، ما الذي يتغيّر، وكيف يمكنك دعمه — مع تحديد أسبوعك الحالي تلقائياً من تاريخ الميلاد.
 
 • عمر طفلك بلمحة
 بالأيام وبالأسابيع وبالأشهر، محسوباً تلقائياً.
 
 • مجتمع الأمهات
-اطرحي أسئلتك، وشاركي تجربتك، وأجيبي على أسئلة غيرك. يمكنك الكتابة باسمك أو
-بدون إظهار اسمك. المجتمع مشترك مع تطبيق دليل حملي، فإذا كنتِ تستخدمينه
-يمكنك الدخول بنفس الحساب.
+اطرحي أسئلتك، وشاركي تجربتك، وأجيبي على أسئلة غيرك. يمكنك الكتابة باسمك أو بدون إظهار اسمك. المجتمع مشترك مع تطبيق دليل حملي، فإذا كنتِ تستخدمينه يمكنك الدخول بنفس الحساب.
 
 التطبيق مجاني بالكامل.
 
-ملاحظة: المحتوى في هذا التطبيق للاطلاع العام ولا يُغني عن استشارة الطبيب.
-إذا كان لديك أي قلق بخصوص صحة طفلك أو تطوره، راجعي طبيب الأطفال.
+ملاحظة: المحتوى في هذا التطبيق للاطلاع العام ولا يُغني عن استشارة الطبيب. ومواعيد التطعيمات للاسترشاد فقط، وعند أي اختلاف اعتمدي جدول وزارة الصحة في بلدك. إذا كان لديك أي قلق بخصوص صحة طفلك أو تطوره، راجعي طبيب الأطفال.
 ```
 
 ---
@@ -111,7 +134,7 @@ baby,milestone,newborn,development,growth,parenting,infant,tracker,mom,weekly,ar
 **Promotional text** (170 max)
 
 ```
-Follow your baby's milestones month by month, read how they grow week by week, and share the journey with other parents.
+New: your baby's vaccine schedule for your country, with a reminder before every dose - alongside monthly milestones, weekly growth, and the parents' community.
 ```
 
 **Description**
@@ -123,6 +146,13 @@ My Baby & I is your companion through your baby's first year.
 See what your baby can do this month, grouped into three sets: skills most
 babies have mastered, emerging skills about half are doing, and advanced
 skills. Check off each one and watch progress fill in at a glance.
+
+• Vaccine schedule, with reminders
+Your baby's vaccine schedule for your country, where you record the date of
+each dose and can edit the schedule or add a vaccine of your own. A
+notification arrives three days before every dose and again on the day, and
+the home screen shows which vaccine is next and when. The vaccine screen
+names the sources the dates come from.
 
 • Week by week
 Detailed reading on how your baby grows and changes through the first year,
@@ -139,8 +169,9 @@ Pregnancy Guide app, so an existing account signs straight in.
 Completely free.
 
 Note: content in this app is general information and is not a substitute for
-medical advice. If you have any concern about your baby's health or
-development, talk to your pediatrician.
+medical advice. Vaccine dates are for guidance only - where they differ, follow
+your own country's ministry of health schedule. If you have any concern about
+your baby's health or development, talk to your pediatrician.
 ```
 
 ---
