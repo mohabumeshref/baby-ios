@@ -24,6 +24,9 @@ struct OnboardingView: View {
     @State private var step = 0
     @State private var birthDate = Date()
     @State private var showDatePicker = false
+    /// Optional from the start: a mother with one baby has no need to name
+    /// them, and a blank falls back to "طفلي".
+    @State private var childName = ""
 
     private static let stepCount = 3
 
@@ -128,6 +131,8 @@ struct OnboardingView: View {
                 .font(WarmFont.title)
                 .foregroundStyle(Warm.brand)
 
+            WarmTextField(placeholder: L.childNameHint, text: $childName)
+
             Button { showDatePicker = true } label: {
                 VStack(spacing: 6) {
                     Text(Self.fieldFormatter.string(from: birthDate))
@@ -207,7 +212,18 @@ struct OnboardingView: View {
     }
 
     private func finish() {
-        profile.setBirthDate(birthDate)
+        // The first time through this creates child one, which an existing
+        // single-child install already has: there, the date and name land on
+        // the child they are revisiting instead.
+        if profile.children.isEmpty {
+            profile.addChild(name: childName, birthDate: birthDate)
+        } else {
+            profile.setBirthDate(birthDate)
+            let trimmed = childName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty, let id = profile.activeChildId {
+                profile.rename(childId: id, to: trimmed)
+            }
+        }
         Task {
             // Asked here, not at launch: by now the parent has told us about
             // their baby, so a weekly reminder is an obvious benefit rather
@@ -216,7 +232,7 @@ struct OnboardingView: View {
             await notifications.scheduleWeeklyReminder(birthDate: birthDate)
             // The country was chosen in step 2 and the date in step 3, so the
             // schedule is fully known the moment this runs.
-            await VaccineReminders.reschedule(store: vaccines, birthDate: birthDate)
+            await VaccineReminders.reschedule(store: vaccines, profile: profile)
         }
         if isRevisiting { dismiss() }
     }

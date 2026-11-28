@@ -156,13 +156,18 @@ struct HomeView: View {
     // MARK: - Hero
 
     private func hero(_ age: BabyAge) -> some View {
-        // The age headline alone. "مهارات هذا الشهر" used to sit above it as an
-        // eyebrow; it now names the skills section further down the screen,
-        // where the chips it refers to actually are.
-        Text(L.monthHeadline(age.milestoneMonth))
-            .font(WarmFont.display)
-            .foregroundStyle(Warm.ink)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        // The child chip above the age headline, so whose age this is can be
+        // read and changed in the same glance. "مهارات هذا الشهر" used to sit
+        // here as an eyebrow; it now names the skills section further down the
+        // screen, where the chips it refers to actually are.
+        VStack(alignment: .leading, spacing: 8) {
+            ChildSwitcherChip()
+
+            Text(L.monthHeadline(age.milestoneMonth))
+                .font(WarmFont.display)
+                .foregroundStyle(Warm.ink)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Skills section

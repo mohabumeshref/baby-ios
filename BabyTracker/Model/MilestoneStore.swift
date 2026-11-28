@@ -26,12 +26,34 @@ final class MilestoneStore: ObservableObject {
     /// Bumped whenever a chip toggles, so views observing this object refresh.
     @Published private(set) var revision = 0
 
+    /// Namespace of the child whose progress this is showing - empty for the
+    /// first child, so their existing keys are read unchanged.
+    private var keyPrefix: String
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        // Read straight from storage rather than waiting to be told: the first
+        // frame is drawn before any wiring runs, and it must already show the
+        // active child's check-offs rather than the first child's.
+        self.keyPrefix = ChildStore.activePrefix(defaults)
+    }
+
+    /// Points the store at another child. Bumps `revision` because every
+    /// answer this object gives changes, though no value was written.
+    func setKeyPrefix(_ prefix: String) {
+        guard prefix != keyPrefix else { return }
+        keyPrefix = prefix
+        revision &+= 1
+    }
+
+    /// Re-reads everything. Needed after a reset, which clears the stored
+    /// values without going through this object.
+    func refresh() {
+        revision &+= 1
     }
 
     private func key(month: Int, tier: Int, index: Int) -> String {
-        "WR_SKILL_\(month)_\(tier)_\(index)"
+        "\(keyPrefix)WR_SKILL_\(month)_\(tier)_\(index)"
     }
 
     func isChecked(month: Int, tier: Int, index: Int) -> Bool {

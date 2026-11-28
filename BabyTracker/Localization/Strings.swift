@@ -348,17 +348,27 @@ enum L {
     static var vaxReminderTitle: String {
         localized(ar: "تذكير تطعيم", en: "Vaccine reminder")
     }
-    static func vaxReminderToday(_ name: String) -> String {
+    /// `child` is passed only when the family has more than one, so a single
+    /// child's reminder never reads as if it belonged to someone else.
+    static func vaxReminderToday(_ name: String, child: String? = nil) -> String {
         localized(
-            ar: "اليوم موعد تطعيم \(name)",
-            en: "\(name) is due today"
+            ar: "اليوم موعد تطعيم \(name)\(forChildAr(child))",
+            en: "\(name) is due today\(forChildEn(child))"
         )
     }
-    static func vaxReminderSoon(_ name: String) -> String {
+    static func vaxReminderSoon(_ name: String, child: String? = nil) -> String {
         localized(
-            ar: "اقترب موعد تطعيم \(name) (خلال أيام)",
-            en: "\(name) is due in a few days"
+            ar: "اقترب موعد تطعيم \(name)\(forChildAr(child)) (خلال أيام)",
+            en: "\(name) is due in a few days\(forChildEn(child))"
         )
+    }
+    private static func forChildAr(_ child: String?) -> String {
+        guard let child, !child.isEmpty else { return "" }
+        return " لـ \(child)"
+    }
+    private static func forChildEn(_ child: String?) -> String {
+        guard let child, !child.isEmpty else { return "" }
+        return " for \(child)"
     }
     /// Home-card prefix before a vaccine name ("حان موعد: اسم"), where the row
     /// subtitle above stands alone and so carries the pronoun.
@@ -390,7 +400,7 @@ enum L {
     }
     static var vaxLongPressHint: String {
         localized(
-            ar: "اضغطي مطوّلاً على أي تطعيم للتعديل أو الحذف",
+            ar: "اضغطي مطوّلاً على أي مطعوم للتعديل أو الحذف",
             en: "Press and hold a vaccine to edit or delete it"
         )
     }
@@ -430,4 +440,51 @@ enum L {
     static var next: String { localized(ar: "التالي", en: "Next") }
     static var previous: String { localized(ar: "السابق", en: "Back") }
     static var done: String { localized(ar: "تم", en: "Done") }
+
+    // MARK: - Children
+    //
+    // Arabic taken verbatim from the Android app's strings.xml, so a mother
+    // using both phones reads the same words.
+
+    static var childrenTitle: String {
+        localized(ar: "أطفالي", en: "My children")
+    }
+    static var childDefaultName: String {
+        localized(ar: "طفلي", en: "My baby")
+    }
+    static var childAdd: String {
+        localized(ar: "إضافة طفل", en: "Add a child")
+    }
+    static var childNameHint: String {
+        localized(ar: "اسم الطفل (اختياري)", en: "Child's name (optional)")
+    }
+    static var childRename: String {
+        localized(ar: "تعديل الاسم", en: "Rename")
+    }
+    static var childRemove: String {
+        localized(ar: "حذف هذا الطفل", en: "Remove this child")
+    }
+    static var childRemoveConfirm: String {
+        localized(
+            ar: "سيتم حذف هذا الطفل وكل بياناته (التطعيمات والمهارات). هل أنتِ متأكدة؟",
+            en: "This child and all their data (vaccines and milestones) will be deleted. Are you sure?"
+        )
+    }
+
+    static var reset: String { localized(ar: "إعادة ضبط", en: "Reset") }
+    static var resetTitle: String {
+        localized(ar: "ماذا تريدين إعادة ضبطه؟", en: "What would you like to reset?")
+    }
+    static var resetThisChild: String {
+        localized(ar: "إعادة ضبط هذا الطفل فقط", en: "Reset this child only")
+    }
+    static var resetAllChildren: String {
+        localized(ar: "حذف جميع الأطفال والبدء من جديد", en: "Remove all children and start over")
+    }
+    static var resetConfirm: String {
+        localized(
+            ar: "سيتم حذف التطعيمات والمهارات المسجّلة. الدولة والمطاعيم التي أضفتها تبقى كما هي.",
+            en: "Recorded vaccines and milestones will be cleared. Your country and any vaccines you added stay."
+        )
+    }
 }

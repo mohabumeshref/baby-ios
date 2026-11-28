@@ -78,7 +78,16 @@ struct VaccinesView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CountryLine(name: vaccines.countryName) { showCountryPicker = true }
+            // One line, two controls: the child on the leading edge - the
+            // right in Arabic - and the country on the trailing one, which is
+            // the far left. Each stays where the eye last found it.
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                ChildSwitcherChip()
+
+                Spacer(minLength: 8)
+
+                CountryLine(name: vaccines.countryName) { showCountryPicker = true }
+            }
 
             Text(L.vaxProgress(done: vaccines.completedCount, total: vaccines.totalCount))
                 .font(WarmFont.heading)

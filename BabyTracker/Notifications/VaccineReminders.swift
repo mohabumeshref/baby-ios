@@ -47,14 +47,32 @@ enum VaccineReminders {
 
     private static let center = UNUserNotificationCenter.current()
 
-    /// Rebuilds every vaccine reminder from current state.
+    /// One child the reminders are built for.
+    struct Target {
+        /// Namespace their ticks live under - empty for the first child.
+        let keyPrefix: String
+        /// Named in the body only when there is more than one child.
+        let name: String?
+        let birthDate: Date
+    }
+
+    /// Rebuilds every vaccine reminder from current state, for every child.
     ///
     /// Safe to call as often as state might have changed; it is a cancel and
     /// re-add, so running it twice leaves the same set of requests.
-    static func reschedule(store: VaccineStore, birthDate: Date?) async {
+    ///
+    /// Covers the whole family rather than the child on screen: a sibling's
+    /// dose comes due whether or not their mother happens to be looking at
+    /// them, and a reminder that existed only while a child was selected would
+    /// go missing exactly when it was needed.
+    static func reschedule(store: VaccineStore, profile: BabyProfile) async {
+        await reschedule(store: store, targets: targets(from: profile))
+    }
+
+    static func reschedule(store: VaccineStore, targets: [Target]) async {
         await cancelAll()
 
-        guard let birthDate else { return }
+        guard !targets.isEmpty else { return }
 
         // The screenshot job seeds a birth date, which would otherwise put the
         // system permission prompt in front of every capture.
@@ -69,33 +87,47 @@ enum VaccineReminders {
         let now = Date()
         var pending: [Reminder] = []
 
-        for row in store.rows where !store.isTaken(row) {
-            guard let due = dueDate(birthDate: birthDate, ageMonths: row.ageMonths, calendar: calendar)
-            else { continue }
-
-            for offset in [leadDays, 0] {
+        for target in targets {
+            for row in store.rows where !store.isTaken(row, childPrefix: target.keyPrefix) {
                 guard
-                    let day = calendar.date(byAdding: .day, value: -offset, to: due),
-                    let fireDate = fireTime(on: day, calendar: calendar),
-                    // An overdue dose gets nothing: its dates are both behind
-                    // us, and the schedule screen already flags it.
-                    fireDate > now
+                    let due = dueDate(
+                        birthDate: target.birthDate,
+                        ageMonths: row.ageMonths,
+                        calendar: calendar
+                    )
                 else { continue }
 
-                pending.append(
-                    Reminder(
-                        identifier: identifier(iso: store.countryIso, row: row, offset: offset),
-                        fireDate: fireDate,
-                        body: offset == 0
-                            ? L.vaxReminderToday(row.nameAr)
-                            : L.vaxReminderSoon(row.nameAr)
+                for offset in [leadDays, 0] {
+                    guard
+                        let day = calendar.date(byAdding: .day, value: -offset, to: due),
+                        let fireDate = fireTime(on: day, calendar: calendar),
+                        // An overdue dose gets nothing: its dates are both
+                        // behind us, and the schedule screen already flags it.
+                        fireDate > now
+                    else { continue }
+
+                    pending.append(
+                        Reminder(
+                            identifier: identifier(
+                                childPrefix: target.keyPrefix,
+                                iso: store.countryIso,
+                                row: row,
+                                offset: offset
+                            ),
+                            fireDate: fireDate,
+                            body: offset == 0
+                                ? L.vaxReminderToday(row.nameAr, child: target.name)
+                                : L.vaxReminderSoon(row.nameAr, child: target.name)
+                        )
                     )
-                )
+                }
             }
         }
 
         // Soonest first, so a truncated schedule keeps the reminders that
-        // matter now rather than an arbitrary slice.
+        // matter now rather than an arbitrary slice. With several children the
+        // cap is shared, which is the right reading of it: the next dose due
+        // in the family matters more than an even split between them.
         for reminder in pending.sorted(by: { $0.fireDate < $1.fireDate }).prefix(maxPending) {
             await add(reminder, calendar: calendar)
         }
@@ -103,14 +135,40 @@ enum VaccineReminders {
 
     // MARK: - Internals
 
+    /// Every child, or - for a screenshot run, which seeds a birth date
+    /// without creating any records - the single date that implies.
+    private static func targets(from profile: BabyProfile) -> [Target] {
+        guard !profile.children.isEmpty else {
+            guard let birthDate = profile.birthDate else { return [] }
+            return [Target(keyPrefix: "", name: nil, birthDate: birthDate)]
+        }
+
+        let namesNeeded = profile.children.count > 1
+        return profile.children.map { child in
+            Target(
+                keyPrefix: ChildStore.prefix(for: child),
+                name: namesNeeded ? profile.label(for: child) : nil,
+                birthDate: child.birthDate
+            )
+        }
+    }
+
     private struct Reminder {
         let identifier: String
         let fireDate: Date
         let body: String
     }
 
-    private static func identifier(iso: String, row: VaccineStore.Row, offset: Int) -> String {
-        "\(identifierPrefix)\(iso)_\(row.code)_\(row.round)_\(offset)"
+    /// The child's namespace sits inside the identifier, so siblings' requests
+    /// cannot collide. It is empty for the first child, which keeps the
+    /// identifiers an existing install already wrote.
+    private static func identifier(
+        childPrefix: String,
+        iso: String,
+        row: VaccineStore.Row,
+        offset: Int
+    ) -> String {
+        "\(identifierPrefix)\(childPrefix)\(iso)_\(row.code)_\(row.round)_\(offset)"
     }
 
     /// Clears only this app's vaccine requests, by identifier prefix.

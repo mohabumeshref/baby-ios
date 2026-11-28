@@ -92,6 +92,11 @@ final class VaccineStore: ObservableObject {
     private var overlay = Overlay()
     private var didAttemptIPRefine = false
 
+    /// Namespace of the child whose ticks these are - empty for the first
+    /// child, so their existing keys are read unchanged. The country and the
+    /// overlay are NOT prefixed: both are family-wide.
+    private var keyPrefix: String
+
     /// `dd/MM/yyyy` in en_US_POSIX on both sides of the round trip. The
     /// pregnancy tracker crashed on Arabic devices by formatting with the
     /// device locale and then failing to parse its own output back.
@@ -106,6 +111,10 @@ final class VaccineStore: ObservableObject {
     init(defaults: UserDefaults = .standard, data: VaccineData = .bundled) {
         self.defaults = defaults
         self.data = data
+        // Read straight from storage rather than waiting to be told: the first
+        // frame is drawn before any wiring runs, and the home card's summary
+        // must already count the active child's doses.
+        self.keyPrefix = ChildStore.activePrefix(defaults)
 
         let saved = defaults.string(forKey: Keys.country) ?? ""
         // A synchronous best guess so the first frame already shows a country;
@@ -118,6 +127,29 @@ final class VaccineStore: ObservableObject {
         }
 
         reload()
+    }
+
+    /// Points the store at another child. Rows are unchanged - they come from
+    /// the shared schedule and overlay - but every tick and date now resolves
+    /// elsewhere, so observers have to be told.
+    func setKeyPrefix(_ prefix: String) {
+        guard prefix != keyPrefix else { return }
+        keyPrefix = prefix
+        revision += 1
+    }
+
+    /// Re-reads everything. Needed after a reset, which clears the stored
+    /// ticks without going through this object.
+    func refresh() {
+        reload()
+    }
+
+    private func takenKey(_ code: String, _ round: Int) -> String {
+        keyPrefix + Keys.taken(countryIso, code, round)
+    }
+
+    private func dateKey(_ code: String, _ round: Int) -> String {
+        keyPrefix + Keys.date(countryIso, code, round)
     }
 
     var countries: [VaccineData.Country] { data.countries }
@@ -162,11 +194,18 @@ final class VaccineStore: ObservableObject {
     // MARK: - Reading
 
     func isTaken(_ row: Row) -> Bool {
-        defaults.bool(forKey: Keys.taken(countryIso, row.code, row.round))
+        defaults.bool(forKey: takenKey(row.code, row.round))
+    }
+
+    /// Whether a dose is ticked for a named child rather than the one on
+    /// screen. Reminders are built for the whole family, so they have to ask
+    /// about children who are not currently being viewed.
+    func isTaken(_ row: Row, childPrefix: String) -> Bool {
+        defaults.bool(forKey: childPrefix + Keys.taken(countryIso, row.code, row.round))
     }
 
     func takenDate(_ row: Row) -> String {
-        defaults.string(forKey: Keys.date(countryIso, row.code, row.round)) ?? ""
+        defaults.string(forKey: dateKey(row.code, row.round)) ?? ""
     }
 
     /// Doses already due for a baby of `babyMonths`, not yet ticked.
@@ -182,10 +221,10 @@ final class VaccineStore: ObservableObject {
     /// Marking a dose taken records TODAY without asking, so one tap is
     /// enough; the row then offers an edit link to correct the date.
     func setTaken(_ row: Row, _ taken: Bool) {
-        defaults.set(taken, forKey: Keys.taken(countryIso, row.code, row.round))
+        defaults.set(taken, forKey: takenKey(row.code, row.round))
         defaults.set(
             taken ? Self.dateFormatter.string(from: Date()) : "",
-            forKey: Keys.date(countryIso, row.code, row.round)
+            forKey: dateKey(row.code, row.round)
         )
         revision += 1
     }
@@ -193,10 +232,10 @@ final class VaccineStore: ObservableObject {
     /// Editing a date keeps the dose marked taken - Android does the same, so
     /// correcting a date can never silently untick a row.
     func setTakenDate(_ row: Row, _ date: Date) {
-        defaults.set(true, forKey: Keys.taken(countryIso, row.code, row.round))
+        defaults.set(true, forKey: takenKey(row.code, row.round))
         defaults.set(
             Self.dateFormatter.string(from: date),
-            forKey: Keys.date(countryIso, row.code, row.round)
+            forKey: dateKey(row.code, row.round)
         )
         revision += 1
     }
@@ -250,9 +289,12 @@ final class VaccineStore: ObservableObject {
             if !overlay.removed.contains(row.id) { overlay.removed.append(row.id) }
             overlay.edits.removeValue(forKey: row.id)
         }
-        // Clear its tick too, so re-adding the row later starts clean.
-        defaults.set(false, forKey: Keys.taken(countryIso, row.code, row.round))
-        defaults.set("", forKey: Keys.date(countryIso, row.code, row.round))
+        // Clear its tick too, so re-adding the row later starts clean. Only
+        // for the child on screen: a sibling's record of the same dose is
+        // theirs, and removing a row from the shared schedule does not unmake
+        // the injection they had.
+        defaults.set(false, forKey: takenKey(row.code, row.round))
+        defaults.set("", forKey: dateKey(row.code, row.round))
         saveOverlay()
     }
 

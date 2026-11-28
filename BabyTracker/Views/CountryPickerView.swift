@@ -133,8 +133,6 @@ struct CountryLine: View {
                     .underline()
             }
             .buttonStyle(.plain)
-
-            Spacer(minLength: 0)
         }
     }
 }

@@ -40,6 +40,11 @@ struct BabyTrackerApp: App {
                 // tree is pinned RTL rather than left to follow the device.
                 .modifier(PinnedLayoutDirection())
                 .task {
+                    // Both stores read the active child's prefix in their own
+                    // init, so the first frame is already correct; this is the
+                    // belt to that braces, for a launch where the pointer
+                    // moved between init and here.
+                    await syncActiveChild()
                     auth.start()
                     // DEBUG-only, screenshot job only. Compiles away in Release.
                     if let seed = ScreenshotSeed.credentials {
@@ -47,9 +52,7 @@ struct BabyTrackerApp: App {
                     }
                     await notifications.refreshAuthorizationStatus()
                     await RemoteConfigGate.shared.prefetch()
-                    await VaccineReminders.reschedule(
-                        store: vaccines, birthDate: profile.birthDate
-                    )
+                    await VaccineReminders.reschedule(store: vaccines, profile: profile)
                 }
                 // Any vaccine write bumps `revision`, including a country
                 // switch and every overlay change, so one observer here covers
@@ -57,15 +60,21 @@ struct BabyTrackerApp: App {
                 // removing a custom vaccine - wherever in the app it happened.
                 .onChange(of: vaccines.revision) { _ in
                     Task {
-                        await VaccineReminders.reschedule(
-                            store: vaccines, birthDate: profile.birthDate
-                        )
+                        await VaccineReminders.reschedule(store: vaccines, profile: profile)
                     }
                 }
-                .onChange(of: profile.birthDate) { date in
+                // The whole family is rebuilt from `profile`, so the changed
+                // date itself is not needed here.
+                .onChange(of: profile.birthDate) { _ in
                     Task {
-                        await VaccineReminders.reschedule(store: vaccines, birthDate: date)
+                        await VaccineReminders.reschedule(store: vaccines, profile: profile)
                     }
+                }
+                // Switching children repoints where ticks and check-offs are
+                // read from. Two siblings can share a birth date, so this
+                // cannot be folded into the observer above.
+                .onChange(of: profile.activeChildId) { _ in
+                    Task { await syncActiveChild() }
                 }
                 .onChange(of: scenePhase) { phase in
                     guard phase == .active else { return }
@@ -78,12 +87,22 @@ struct BabyTrackerApp: App {
                         await notifications.refreshWeeklyReminder(birthDate: profile.birthDate)
                         // Dates move while the app is backgrounded: yesterday's
                         // "in 3 days" is today's "due today".
-                        await VaccineReminders.reschedule(
-                            store: vaccines, birthDate: profile.birthDate
-                        )
+                        await VaccineReminders.reschedule(store: vaccines, profile: profile)
                     }
                 }
         }
+    }
+
+    /// Points the per-child stores at the active child, then rebuilds the
+    /// reminders - in that order, so the schedule is read for the child whose
+    /// reminders are being written.
+    @MainActor
+    private func syncActiveChild() async {
+        let prefix = profile.activeChildPrefix
+        milestones.setKeyPrefix(prefix)
+        vaccines.setKeyPrefix(prefix)
+
+        await VaccineReminders.reschedule(store: vaccines, profile: profile)
     }
 }
 
