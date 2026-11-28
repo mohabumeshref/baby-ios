@@ -277,7 +277,11 @@ struct PostDetailView: View {
                         if isSending {
                             ProgressView().tint(.white)
                         } else {
-                            Image(systemName: "arrow.up")
+                            // `arrow.forward`, not `arrow.up`: the
+                            // direction-aware symbol mirrors with the layout,
+                            // so sending points the way the text runs - left
+                            // in Arabic.
+                            Image(systemName: "arrow.forward")
                                 .font(.system(size: 15, weight: .semibold))
                         }
                     }
@@ -438,7 +442,7 @@ private struct AnswerRow: View {
                 }
 
                 Button(action: onReply) {
-                    Label(L.reply, systemImage: "arrowshape.turn.up.left")
+                    Label(L.reply, systemImage: "arrowshape.turn.up.backward")
                         .font(WarmFont.caption)
                         .foregroundStyle(Warm.brand)
                 }
